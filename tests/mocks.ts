@@ -1,6 +1,14 @@
-import { Page } from "@playwright/test";
+import { Page, Route } from "@playwright/test";
 import { expect } from "playwright-test-coverage";
 import { User, Role } from "../src/service/pizzaService";
+
+const authTokenValue: string = "yeah this authoken is fake sorry";
+
+async function hasAuthToken(route: Route){
+  const authHeader = await route.request().headerValue("Authorization");
+    expect(authHeader).not.toBeNull();
+    expect(authHeader).toContain(authTokenValue);
+}
 
 async function loginMock(page: Page) {
   let loggedInUser: User | undefined;
@@ -25,7 +33,7 @@ async function loginMock(page: Page) {
     loggedInUser = validUsers[loginReq.email];
     const loginRes = {
       user: loggedInUser,
-      token: "abcdef",
+      token: authTokenValue,
     };
     expect(route.request().method()).toBe("PUT");
     await route.fulfill({ json: loginRes });
@@ -34,6 +42,7 @@ async function loginMock(page: Page) {
   // Return the currently logged in user
   await page.route("*/**/api/user/me", async (route) => {
     expect(route.request().method()).toBe("GET");
+    await hasAuthToken(route);
     await route.fulfill({ json: loggedInUser });
   });
 }
@@ -91,6 +100,7 @@ async function orderMock(page: Page) {
       jwt: "eyJpYXQ",
     };
     expect(route.request().method()).toBe("POST");
+    await hasAuthToken(route);
     await route.fulfill({ json: orderRes });
   });
 }
