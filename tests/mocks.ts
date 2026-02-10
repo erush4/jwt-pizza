@@ -4,39 +4,74 @@ import { User, Role } from "../src/service/pizzaService";
 
 const authTokenValue: string = "yeah this authoken is fake sorry";
 
-async function hasAuthToken(route: Route){
+async function hasAuthToken(route: Route) {
   const authHeader = await route.request().headerValue("Authorization");
-    expect(authHeader).not.toBeNull();
-    expect(authHeader).toContain(authTokenValue);
+  expect(authHeader).not.toBeNull();
+  expect(authHeader).toContain(authTokenValue);
 }
 
-async function loginMock(page: Page) {
-  let loggedInUser: User | undefined;
-  const validUsers: Record<string, User> = {
-    "d@jwt.com": {
-      id: "3",
-      name: "Kai Chen",
-      email: "d@jwt.com",
-      password: "a",
-      roles: [{ role: Role.Diner }],
-    },
-  };
+const validUsers: Record<string, User> = {
+  diner: {
+    id: "3",
+    name: "Kai Chen",
+    email: "d@test.com",
+    password: "a",
+    roles: [{ role: Role.Diner }],
+  },
+  franchisee: {
+    id: "10",
+    name: "Best Pizza",
+    email: "pizza@test.com",
+    password: "b",
+    roles: [{ role: Role.Franchisee }],
+  },
+  admin: {
+    id: "7",
+    name: "Head Honcho",
+    email: "admin@test.com",
+    password: "c",
+    roles: [{ role: Role.Admin }],
+  },
+};
 
-  // Authorize login for the given user
+async function authMock(page: Page) {
+  let loggedInUser: User | undefined;
+
+  // login and logout for the given user
   await page.route("*/**/api/auth", async (route) => {
-    const loginReq = route.request().postDataJSON();
-    const user = validUsers[loginReq.email];
-    if (!user || user.password !== loginReq.password) {
-      await route.fulfill({ status: 401, json: { error: "Unauthorized" } });
-      return;
+    //handle route methods
+    const method = route.request().method();
+    switch (method) {
+      
+      //login
+      case "PUT":
+        const loginReq = route.request().postDataJSON();
+        const user = Object.values(validUsers).find(
+          (u) => u.email === loginReq.email,
+        );
+        if (!user || user.password !== loginReq.password) {
+          await route.fulfill({ status: 401, json: { error: "Unauthorized" } });
+          return;
+        }
+        loggedInUser = user;
+        const loginRes = {
+          user: loggedInUser,
+          token: authTokenValue,
+        };
+        await route.fulfill({ json: loginRes });
+        break;
+
+      //logout
+      case "DELETE":
+        await hasAuthToken(route);
+        loggedInUser = undefined;
+        await route.fulfill({ json: { message: "logout successful" } });
+        break;
+
+      //register
+      case "POST":
+        break;
     }
-    loggedInUser = validUsers[loginReq.email];
-    const loginRes = {
-      user: loggedInUser,
-      token: authTokenValue,
-    };
-    expect(route.request().method()).toBe("PUT");
-    await route.fulfill({ json: loginRes });
   });
 
   // Return the currently logged in user
@@ -104,4 +139,11 @@ async function orderMock(page: Page) {
     await route.fulfill({ json: orderRes });
   });
 }
-export { loginMock, menuMock, getFranchisesMock, orderMock };
+export {
+  authMock,
+  menuMock,
+  getFranchisesMock,
+  orderMock,
+  authTokenValue,
+  validUsers,
+};

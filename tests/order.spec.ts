@@ -1,18 +1,16 @@
 import { expect, test } from "playwright-test-coverage";
-import { loginMock, menuMock, getFranchisesMock, orderMock } from "./mocks";
-import { Page } from "@playwright/test";
+import { authMock, menuMock, getFranchisesMock, orderMock, validUsers } from "./mocks";
 
-async function mockSetup(page: Page) {
-  await loginMock(page);
+test.beforeEach(async ({ page }) => {
+  await authMock(page);
+  await authMock(page);
   await menuMock(page);
   await getFranchisesMock(page);
   await orderMock(page);
   await page.goto("/");
-}
+});
 
-test("purchase with login", async ({ page }) => {
-  await mockSetup(page);
-
+test("purchase pizza", async ({ page }) => {
   // Go to order page
   await page.getByRole("button", { name: "Order now" }).click();
 
@@ -27,13 +25,16 @@ test("purchase with login", async ({ page }) => {
   await expect(page.locator("form")).toContainText("Selected pizzas: 2");
   await page.getByRole("button", { name: "Checkout" }).click();
 
-  // Login
+  // Login — can't use default login since we would lose the order
+  const user = validUsers["diner"]
   expect(page.url()).toContain("/payment/login");
   await page.getByPlaceholder("Email address").click();
-  await page.getByPlaceholder("Email address").fill("d@jwt.com");
-  await page.getByPlaceholder("Email address").press("Tab");
-  await page.getByPlaceholder("Password").fill("a");
+  await page.getByPlaceholder("Email address").fill(user.email!);
+  await page.getByPlaceholder("Password").fill(user.password!);
   await page.getByRole("button", { name: "Login" }).click();
+  await page.waitForResponse((response) => {
+      return response.url().includes("/api/auth") && response.status() === 200;
+    });
 
   // Checkout
   expect(page.url()).toContain("/payment");
