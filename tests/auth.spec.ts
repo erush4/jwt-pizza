@@ -1,8 +1,9 @@
 import { expect, test } from "playwright-test-coverage";
-import { mockSetup } from "./mocks";
+import { loginMock } from "./mocks";
 
 test("login", async ({ page }) => {
-  await mockSetup(page);
+  await loginMock(page);
+  await page.goto("/");
   await page.getByRole("link", { name: "Login" }).click();
   await page.getByRole("textbox", { name: "Email address" }).fill("d@jwt.com");
   await page.getByRole("textbox", { name: "Password" }).fill("a");

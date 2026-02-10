@@ -2,7 +2,7 @@ import { Page } from "@playwright/test";
 import { expect } from "playwright-test-coverage";
 import { User, Role } from "../src/service/pizzaService";
 
-async function mockSetup(page: Page) {
+async function loginMock(page: Page) {
   let loggedInUser: User | undefined;
   const validUsers: Record<string, User> = {
     "d@jwt.com": {
@@ -36,8 +36,9 @@ async function mockSetup(page: Page) {
     expect(route.request().method()).toBe("GET");
     await route.fulfill({ json: loggedInUser });
   });
+}
 
-  // A standard menu
+async function menuMock(page: Page) {
   await page.route("*/**/api/order/menu", async (route) => {
     const menuRes = [
       {
@@ -58,8 +59,9 @@ async function mockSetup(page: Page) {
     expect(route.request().method()).toBe("GET");
     await route.fulfill({ json: menuRes });
   });
+}
 
-  // Standard franchises and stores
+async function getFranchisesMock(page: Page) {
   await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
     const franchiseRes = {
       franchises: [
@@ -79,8 +81,9 @@ async function mockSetup(page: Page) {
     expect(route.request().method()).toBe("GET");
     await route.fulfill({ json: franchiseRes });
   });
+}
 
-  // Order a pizza.
+async function orderMock(page: Page) {
   await page.route("*/**/api/order", async (route) => {
     const orderReq = route.request().postDataJSON();
     const orderRes = {
@@ -90,8 +93,5 @@ async function mockSetup(page: Page) {
     expect(route.request().method()).toBe("POST");
     await route.fulfill({ json: orderRes });
   });
-
-  await page.goto("/");
 }
-
-export { mockSetup };
+export { loginMock, menuMock, getFranchisesMock, orderMock };

@@ -1,5 +1,14 @@
 import { expect, test } from "playwright-test-coverage";
-import { mockSetup } from "./mocks";
+import { loginMock, menuMock, getFranchisesMock, orderMock } from "./mocks";
+import { Page } from "@playwright/test";
+
+async function mockSetup(page: Page) {
+  await loginMock(page);
+  await menuMock(page);
+  await getFranchisesMock(page);
+  await orderMock(page);
+  await page.goto("/");
+}
 
 test("purchase with login", async ({ page }) => {
   await mockSetup(page);
