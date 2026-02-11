@@ -91,7 +91,7 @@ export default function Login(props: Props) {
             </div>
 
             <div className="flex flex-row mt-8">
-              <Button title="Login" submit onPress={() => {}} />
+              <Button title="Login" submit onPress={() => {} } testid="submit" />
             </div>
             <div className="text-white italic">
               Are you new?{' '}

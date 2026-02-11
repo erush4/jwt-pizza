@@ -107,7 +107,7 @@ export default function Register(props: Props) {
             </div>
 
             <div className="flex flex-row mt-8">
-              <Button title="Register" submit onPress={() => {}} />
+              <Button title="Register" submit onPress={() => {}} testid="submit"/>
             </div>
             <div className="text-white italic">
               Already have an account?{' '}
