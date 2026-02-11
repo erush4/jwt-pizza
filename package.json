@@ -27,6 +27,7 @@
     "vite-plugin-istanbul": "^7.2.1"
   },
   "dependencies": {
+    "dotenv": "^17.2.4",
     "preline": "^2.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

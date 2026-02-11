@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+
+dotenv.config({path: ".env.development"})
 
 export default defineConfig({
   testDir: './tests',
@@ -11,6 +14,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
+    
   },
 
   /* Configure projects for major browsers */
