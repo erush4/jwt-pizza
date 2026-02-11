@@ -41,7 +41,7 @@ export default function Delivery() {
         </svg>
 
         <div>
-          <Button className="bg-transparent border-white" title="Verify" onPress={() => verify()} />
+          <Button className="bg-transparent border-white" title="Verify" onPress={() => verify()} testid='verify-jwt'/>
           <Button title="Order more" onPress={() => navigate('/menu')} />
         </div>
 
@@ -62,7 +62,7 @@ export default function Delivery() {
         <div className="hs-overlay-open:mt-7 hs-overlay-open:opacity-100 hs-overlay-open:duration-500 mt-0 opacity-0 ease-out transition-all sm:max-w-lg sm:w-full m-3 sm:mx-auto min-h-[calc(100%-3.5rem)] flex items-center">
           <div className="w-full flex flex-col bg-white border shadow-sm rounded-xl pointer-events-auto   ">
             <div className="flex justify-between items-center py-3 px-4 border-b bg-slate-200 rounded-t-xl ">
-              <h3 className="font-bold text-gray-800">
+              <h3 className="font-bold text-gray-800" data-testid="jwt-display">
                 JWT Pizza - <span className={jwtPayload.message === 'valid' ? 'text-green-800' : 'text-red-800'}>{jwtPayload.message}</span>
               </h3>
               <button

@@ -6,6 +6,7 @@ const pizzaFactoryUrl = process.env.VITE_PIZZA_FACTORY_URL;
 
 const authTokenValue: string = "yeah this authoken is fake sorry";
 const mockedJwt: string = "hi I'm a jwt";
+
 async function hasAuthToken(route: Route) {
   const authHeader = await route.request().headerValue("Authorization");
   expect(authHeader).not.toBeNull();
@@ -161,42 +162,43 @@ async function orderMock(page: Page) {
   });
 }
 
-// async function jwtMock(page: Page) {
-//   await page.route(pizzaFactoryUrl + "/api/order/verify", async (route) => {
-//     expect(route.request().method()).toBe("POST");
-//     const jwtReq = route.request().postDataJSON();
-//     if (jwtReq.jwt != mockedJwt) {
-//       await route.fulfill({
-//         status: 401,
-//         json: { error: "bad jwt" },
-//       });
-//     }
-//     await route.fulfill({
-//       json: {
-//         message: "valid",
-//         payload: {
-//           vendor: { id: "etrush4", name: "Ethan Rushforth" },
-//           diner: { id: 10, name: "test3", email: "t@jwt.com" },
-//           order: {
-//             items: [{ menuId: 1, description: "Veggie", price: 0.008 }, { menuId: 1, description: "Pepperoni", price: 0.0042 }],
-//             storeId: "4",
-//             franchiseId: 2,
-//             id: 23,
-//           },
-//         },
-//       },
-//     });
-//   });
-// }
+async function jwtMock(page: Page) {
+  await page.route(pizzaFactoryUrl + "/api/order/verify", async (route) => {
+    expect(route.request().method()).toBe("POST");
+    const jwtReq = route.request().postDataJSON();
+    if (jwtReq.jwt != mockedJwt) {
+      await route.fulfill({
+        status: 401,
+        json: { error: "bad jwt" },
+      });
+    }
+    await route.fulfill({
+      json: {
+        message: "valid",
+        payload: {
+          vendor: { id: "etrush4", name: "Ethan Rushforth" },
+          diner: { id: 10, name: "test3", email: "t@jwt.com" },
+          order: {
+            items: [{ menuId: 1, description: "Veggie", price: 0.008 }, { menuId: 1, description: "Pepperoni", price: 0.0042 }],
+            storeId: "4",
+            franchiseId: 2,
+            id: 23,
+          },
+        },
+      },
+    });
+  });
+}
 
-// async function fakeMock(page: Page) {
-//   await page.route("route", async (route) => {});
-// }
+async function fakeMock(page: Page) {
+  await page.route("route", async (route) => {});
+}
 export {
   authMock,
   menuMock,
   getFranchisesMock,
   orderMock,
+  jwtMock,
   authTokenValue,
   validUsers,
 };

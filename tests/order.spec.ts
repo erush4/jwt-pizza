@@ -1,5 +1,12 @@
 import { expect, test } from "playwright-test-coverage";
-import { authMock, menuMock, getFranchisesMock, orderMock, validUsers } from "./mocks";
+import {
+  authMock,
+  menuMock,
+  getFranchisesMock,
+  orderMock,
+  validUsers,
+  jwtMock,
+} from "./mocks";
 
 test.beforeEach(async ({ page }) => {
   await authMock(page);
@@ -7,6 +14,7 @@ test.beforeEach(async ({ page }) => {
   await menuMock(page);
   await getFranchisesMock(page);
   await orderMock(page);
+  await jwtMock(page);
   await page.goto("/");
 });
 
@@ -26,15 +34,15 @@ test("purchase pizza", async ({ page }) => {
   await page.getByRole("button", { name: "Checkout" }).click();
 
   // Login — can't use default login since we would lose the order
-  const user = validUsers["diner"]
+  const user = validUsers["diner"];
   expect(page.url()).toContain("/payment/login");
   await page.getByPlaceholder("Email address").click();
   await page.getByPlaceholder("Email address").fill(user.email!);
   await page.getByPlaceholder("Password").fill(user.password!);
   await page.getByTestId("submit").click();
   await page.waitForResponse((response) => {
-      return response.url().includes("/api/auth") && response.status() === 200;
-    });
+    return response.url().includes("/api/auth") && response.status() === 200;
+  });
 
   // Checkout
   expect(page.url()).toContain("/payment");
@@ -56,6 +64,12 @@ test("purchase pizza", async ({ page }) => {
   await expect(page.getByText("0.008")).toBeVisible();
   await expect(page.getByTestId("order-length")).toContainText("2");
 
-  //verify jwt
-  
+  // verify jwt
+  await expect(page.getByTestId("jwt-display")).not.toBeVisible();
+  await page.getByTestId("verify-jwt").click();
+  await expect(page.getByTestId("jwt-display")).toBeVisible();
+  await expect(page.getByTestId("jwt-display")).toContainText(
+    "JWT Pizza - valid",
+  );
+  //tried testing close but it was so flaky I got rid of it
 });
