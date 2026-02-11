@@ -6,6 +6,14 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
+test.afterEach(async ({ page }) => {
+  await page.context().clearCookies();
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+});
+
 test.describe("login", () => {
   test("login diner", async ({ page }) => {
     await login(page, validUsers["diner"]);

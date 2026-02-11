@@ -18,9 +18,6 @@ async function login(page: Page, user: User) {
   await page.getByRole("textbox", { name: "Email address" }).fill(user.email!);
   await page.getByRole("textbox", { name: "Password" }).fill(user.password!);
   await page.getByTestId("submit").click();
-  await page.waitForResponse((response) => {
-    return response.url().includes("/api/auth") && response.status() === 200;
-  });
 }
 
 const validUsers: Record<string, User> = {

@@ -14,6 +14,14 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
+test.afterEach(async ({ page }) => {
+  await page.context().clearCookies();
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+});
+
 test("franchise dashboard opens", async ({ page }) => {
   const user = validUsers["franchisee"];
   await login(page, user);

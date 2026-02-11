@@ -18,6 +18,14 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
+test.afterEach(async ({ page }) => {
+  await page.context().clearCookies();
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+});
+
 test("purchase pizza", async ({ page }) => {
   // Go to order page
   await page.getByRole("button", { name: "Order now" }).click();

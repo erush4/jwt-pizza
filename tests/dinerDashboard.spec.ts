@@ -7,6 +7,14 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
+test.afterEach(async ({ page }) => {
+  await page.context().clearCookies();
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+});
+
 test("dinerDashboard opens", async ({ page }) => {
   const user = validUsers["diner"];
   await login(page, user);
