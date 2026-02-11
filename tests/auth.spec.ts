@@ -1,18 +1,5 @@
 import { expect, test } from "playwright-test-coverage";
-import { authMock, authTokenValue, validUsers } from "./mocks";
-import { Page } from "@playwright/test";
-import { User } from "../src/service/pizzaService";
-
-async function login(page: Page, user: User) {
-  await page.getByRole("link", { name: "Login" }).click();
-  await page.getByRole("textbox", { name: "Email address" }).fill(user.email!);
-  await page.getByRole("textbox", { name: "Password" }).fill(user.password!);
-  await page.getByTestId("submit").click();
-  await page.waitForResponse((response) => {
-    return response.url().includes("/api/auth") && response.status() === 200;
-  });
-  
-}
+import { authMock, authTokenValue, login, validUsers } from "./mocks";
 
 test.beforeEach(async ({ page }) => {
   await authMock(page);
@@ -62,8 +49,4 @@ test("register", async ({ page }) => {
   await expect(
     page.evaluate(() => localStorage.getItem("token")),
   ).resolves.toBe(authTokenValue);
-});
-
-test.describe("new test block", () => {
-  test("new test template", async ({ page }) => {});
 });

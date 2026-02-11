@@ -37,10 +37,10 @@ export default function DinerDashboard(props: Props) {
         </div>
 
         <div className="my-4 text-lg text-orange-200 text-start grid grid-cols-5 gap-2">
-          <div className="font-semibold text-orange-400">name:</div> <div className="col-span-4">{user.name}</div>
-          <div className="font-semibold text-orange-400">email:</div> <div className="col-span-4">{user.email}</div>
+          <div className="font-semibold text-orange-400">name:</div> <div className="col-span-4" data-testid="username">{user.name}</div>
+          <div className="font-semibold text-orange-400">email:</div> <div className="col-span-4"  data-testid="email">{user.email}</div>
           <div className="font-semibold text-orange-400">role:</div>{' '}
-          <div className="col-span-4">
+          <div className="col-span-4"  data-testid="roles">
             {user.roles &&
               user.roles.map((role, index) => (
                 <span key={index}>
@@ -81,7 +81,7 @@ export default function DinerDashboard(props: Props) {
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="divide-y divide-gray-200" data-testid="orders">
                           {orders.map((order, index) => (
                             <tr key={index} className="hover:bg-gray-100">
                               <td className="px-6 py-4 whitespace-nowrap text-start text-xs sm:text-sm font-medium text-gray-800">{order.id}</td>

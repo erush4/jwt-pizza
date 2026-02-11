@@ -13,6 +13,16 @@ async function hasAuthToken(route: Route) {
   expect(authHeader).toContain(authTokenValue);
 }
 
+async function login(page: Page, user: User) {
+  await page.getByRole("link", { name: "Login" }).click();
+  await page.getByRole("textbox", { name: "Email address" }).fill(user.email!);
+  await page.getByRole("textbox", { name: "Password" }).fill(user.password!);
+  await page.getByTestId("submit").click();
+  await page.waitForResponse((response) => {
+    return response.url().includes("/api/auth") && response.status() === 200;
+  });
+}
+
 const validUsers: Record<string, User> = {
   diner: {
     id: "3",
@@ -151,14 +161,51 @@ async function getFranchisesMock(page: Page) {
 
 async function orderMock(page: Page) {
   await page.route("*/**/api/order", async (route) => {
-    const orderReq = route.request().postDataJSON();
-    const orderRes = {
-      order: { ...orderReq, id: 23 },
-      jwt: mockedJwt,
-    };
-    expect(route.request().method()).toBe("POST");
-    await hasAuthToken(route);
-    await route.fulfill({ json: orderRes });
+    const method = route.request().method();
+    switch (method) {
+      case "POST":
+        const orderReq = route.request().postDataJSON();
+        const orderRes = {
+          order: { ...orderReq, id: 23 },
+          jwt: mockedJwt,
+        };
+        expect(route.request().method()).toBe("POST");
+        await hasAuthToken(route);
+        await route.fulfill({ json: orderRes });
+        break;
+
+        // get orders for diner-dashboard
+      case "GET":
+        await hasAuthToken(route);
+        await route.fulfill({
+          json: {
+            dinerId: validUsers["diner"].id,
+            orders: [
+              {
+                id: 1,
+                franchiseId: 1,
+                storeId: 1,
+                date: "2026-02-10T19:42:48.000Z",
+                items: [
+                  { id: 1, menuId: 2, description: "Pepperoni", price: 0.0042 },
+                ],
+              },
+              {
+                id: 2,
+                franchiseId: 1,
+                storeId: 1,
+                date: "2026-02-10T19:44:40.000Z",
+                items: [
+                  { id: 2, menuId: 1, description: "Veggie", price: 0.0038 },
+                  { id: 3, menuId: 2, description: "Pepperoni", price: 0.0042 },
+                ],
+              },
+            ],
+            page: 1,
+          },
+        });
+        break;
+    }
   });
 }
 
@@ -179,7 +226,10 @@ async function jwtMock(page: Page) {
           vendor: { id: "etrush4", name: "Ethan Rushforth" },
           diner: { id: 10, name: "test3", email: "t@jwt.com" },
           order: {
-            items: [{ menuId: 1, description: "Veggie", price: 0.008 }, { menuId: 1, description: "Pepperoni", price: 0.0042 }],
+            items: [
+              { menuId: 1, description: "Veggie", price: 0.008 },
+              { menuId: 1, description: "Pepperoni", price: 0.0042 },
+            ],
             storeId: "4",
             franchiseId: 2,
             id: 23,
@@ -199,6 +249,7 @@ export {
   getFranchisesMock,
   orderMock,
   jwtMock,
+  login,
   authTokenValue,
   validUsers,
 };
