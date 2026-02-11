@@ -22,3 +22,8 @@ test("History loads", async ({ page }) => {
   await page.getByRole("link", { name: "History" }).click();
   expect(page.url()).toContain("/history");
 });
+
+test('404 page displays', async ({ page }) => {
+  await page.goto('/this-does-not-exist');
+  await expect(page.getByText('Oops')).toBeVisible();
+});
