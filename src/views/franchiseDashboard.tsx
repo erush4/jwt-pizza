@@ -55,7 +55,7 @@ export default function FranchiseDashboard(props: Props) {
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200" data-testid="franchise-stores">
                     {franchise.stores?.map((store, index) => (
                       <tr key={index} className="hover:bg-gray-100">
                         <td className="px-6 py-4 text-sm text-center font-medium text-gray-800">{store.name}</td>

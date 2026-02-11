@@ -143,6 +143,7 @@ async function getFranchisesMock(page: Page) {
       franchises: [
         {
           id: 2,
+          admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
           name: "LotaPizza",
           stores: [
             { id: 4, name: "Lehi" },
@@ -150,8 +151,18 @@ async function getFranchisesMock(page: Page) {
             { id: 6, name: "American Fork" },
           ],
         },
-        { id: 3, name: "PizzaCorp", stores: [{ id: 7, name: "Spanish Fork" }] },
-        { id: 4, name: "topSpot", stores: [] },
+        {
+          id: 3,
+          name: "PizzaCorp",
+          admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
+          stores: [{ id: 7, name: "Spanish Fork" }],
+        },
+        {
+          id: 4,
+          name: "topSpot",
+          admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
+          stores: [],
+        },
       ],
     };
     expect(route.request().method()).toBe("GET");
@@ -174,7 +185,7 @@ async function orderMock(page: Page) {
         await route.fulfill({ json: orderRes });
         break;
 
-        // get orders for diner-dashboard
+      // get orders for diner-dashboard
       case "GET":
         await hasAuthToken(route);
         await route.fulfill({
@@ -240,6 +251,32 @@ async function jwtMock(page: Page) {
   });
 }
 
+async function getUserFranchiseMock(page: Page) {
+  await page.route("*/**/api/franchise/*", async (route) => {
+    const method = route.request().method();
+    const user = validUsers["franchisee"];
+    switch (method) {
+      case "GET":
+        const franchiseRes = [
+          {
+            id: 2,
+            name: "LotaPizza",
+            admins: [{ id: 3, name: "pizza franchisee", email: user.email! }],
+            stores: [
+              { id: 4, name: "Lehi", totalRevenue: 0 },
+              { id: 5, name: "Springville", totalRevenue: 0 },
+              { id: 6, name: "American Fork", totalRevenue: 0 },
+            ],
+          },
+        ];
+        await hasAuthToken(route);
+        await route.fulfill({ json: franchiseRes });
+        break;
+
+      case "DELETE":
+    }
+  });
+}
 async function fakeMock(page: Page) {
   await page.route("route", async (route) => {});
 }
@@ -250,6 +287,7 @@ export {
   orderMock,
   jwtMock,
   login,
+  getUserFranchiseMock,
   authTokenValue,
   validUsers,
 };
