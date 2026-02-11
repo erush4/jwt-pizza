@@ -31,7 +31,7 @@ test("purchase pizza", async ({ page }) => {
   await page.getByPlaceholder("Email address").click();
   await page.getByPlaceholder("Email address").fill(user.email!);
   await page.getByPlaceholder("Password").fill(user.password!);
-  await page.getByRole("button", { name: "Login" }).click();
+  await page.getByTestId("submit").click();
   await page.waitForResponse((response) => {
       return response.url().includes("/api/auth") && response.status() === 200;
     });
@@ -55,4 +55,7 @@ test("purchase pizza", async ({ page }) => {
   // Check balance
   await expect(page.getByText("0.008")).toBeVisible();
   await expect(page.getByTestId("order-length")).toContainText("2");
+
+  //verify jwt
+  
 });

@@ -2,8 +2,10 @@ import { Page, Route } from "@playwright/test";
 import { expect } from "playwright-test-coverage";
 import { User, Role } from "../src/service/pizzaService";
 
-const authTokenValue: string = "yeah this authoken is fake sorry";
+const pizzaFactoryUrl = process.env.VITE_PIZZA_FACTORY_URL;
 
+const authTokenValue: string = "yeah this authoken is fake sorry";
+const mockedJwt: string = "hi I'm a jwt";
 async function hasAuthToken(route: Route) {
   const authHeader = await route.request().headerValue("Authorization");
   expect(authHeader).not.toBeNull();
@@ -32,6 +34,13 @@ const validUsers: Record<string, User> = {
     password: "c",
     roles: [{ role: Role.Admin }],
   },
+  new: {
+    id: "1000",
+    name: "newbie",
+    email: "new@test.com",
+    password: "d",
+    roles: [{ role: Role.Diner }],
+  },
 };
 
 async function authMock(page: Page) {
@@ -42,7 +51,6 @@ async function authMock(page: Page) {
     //handle route methods
     const method = route.request().method();
     switch (method) {
-      
       //login
       case "PUT":
         const loginReq = route.request().postDataJSON();
@@ -70,6 +78,19 @@ async function authMock(page: Page) {
 
       //register
       case "POST":
+        const registerReq = route.request().postDataJSON();
+        if (!registerReq.email || !registerReq.name || !registerReq.password) {
+          await route.fulfill({
+            status: 400,
+            json: { error: "name, email, and password are required" },
+          });
+        }
+        loggedInUser = validUsers["new"];
+        const registerRes = {
+          user: loggedInUser,
+          token: authTokenValue,
+        };
+        await route.fulfill({ json: registerRes });
         break;
     }
   });
@@ -132,13 +153,45 @@ async function orderMock(page: Page) {
     const orderReq = route.request().postDataJSON();
     const orderRes = {
       order: { ...orderReq, id: 23 },
-      jwt: "eyJpYXQ",
+      jwt: mockedJwt,
     };
     expect(route.request().method()).toBe("POST");
     await hasAuthToken(route);
     await route.fulfill({ json: orderRes });
   });
 }
+
+// async function jwtMock(page: Page) {
+//   await page.route(pizzaFactoryUrl + "/api/order/verify", async (route) => {
+//     expect(route.request().method()).toBe("POST");
+//     const jwtReq = route.request().postDataJSON();
+//     if (jwtReq.jwt != mockedJwt) {
+//       await route.fulfill({
+//         status: 401,
+//         json: { error: "bad jwt" },
+//       });
+//     }
+//     await route.fulfill({
+//       json: {
+//         message: "valid",
+//         payload: {
+//           vendor: { id: "etrush4", name: "Ethan Rushforth" },
+//           diner: { id: 10, name: "test3", email: "t@jwt.com" },
+//           order: {
+//             items: [{ menuId: 1, description: "Veggie", price: 0.008 }, { menuId: 1, description: "Pepperoni", price: 0.0042 }],
+//             storeId: "4",
+//             franchiseId: 2,
+//             id: 23,
+//           },
+//         },
+//       },
+//     });
+//   });
+// }
+
+// async function fakeMock(page: Page) {
+//   await page.route("route", async (route) => {});
+// }
 export {
   authMock,
   menuMock,
