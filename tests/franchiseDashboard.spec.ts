@@ -1,7 +1,7 @@
 import { expect, test } from "playwright-test-coverage";
 import {
   authMock,
-  getFranchisesMock,
+  franchisesMock,
   login,
   validUsers,
   getUserFranchiseMock,
@@ -10,7 +10,7 @@ import {
 test.beforeEach(async ({ page }) => {
   await authMock(page);
   await getUserFranchiseMock(page);
-  await getFranchisesMock(page);
+  await franchisesMock(page);
   await page.goto("/");
 });
 
