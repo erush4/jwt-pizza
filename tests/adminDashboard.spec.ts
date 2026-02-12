@@ -28,35 +28,39 @@ test.describe("admin dashboard", () => {
     expect(totalStores).toEqual(4);
   });
 
-  // test("create and close franchise", async ({ page }) => {
-  //   await page.getByRole("link", { name: "Admin" }).click();
+  test("create and close franchise", async ({ page }) => {
+    const testFranchiseName = "test pizza franchise";
+    await page.getByRole("link", { name: "Admin" }).click();
 
-  //   //add franchise
-  //   await page.getByRole("button", { name: "Add Franchise" }).click();
-  //   await page
-  //     .getByRole("textbox", { name: "franchise name" })
-  //     .fill("test franchise");
-  //   await page
-  //     .getByRole("textbox", { name: "franchisee admin email" })
-  //     .fill("test@test.com");
-  //   await page.getByRole("button", { name: "Create" }).click();
+    //add franchise
+    await page.getByRole("button", { name: "Add Franchise" }).click();
+    await page
+      .getByRole("textbox", { name: "franchise name" })
+      .fill(testFranchiseName);
+    await page
+      .getByRole("textbox", { name: "franchisee admin email" })
+      .fill(validUsers["franchisee"].email!);
+    await page.getByRole("button", { name: "Create" }).click();
 
-  //   //verify franchise
-  //   await expect(
-  //     page.getByRole("cell", { name: "testfranchise" }),
-  //   ).toBeVisible();
-  //   await expect(
-  //     page.getByRole("cell", { name: "pizza franchisee" }).nth(1),
-  //   ).toBeVisible();
+    //verify franchise
+    await page.locator("tbody.divide-y").first().waitFor();
+    await expect(page.getByRole("table")).toContainText("test franchise");
+    let franchiseCount = await page.locator("tbody.divide-y").count();
+    expect(franchiseCount).toEqual(4);
+    //close franchise
+    await page
+      .getByRole("row", { name: testFranchiseName })
+      .getByRole("button")
+      .click();
+    expect(page.url()).toContain("/close-franchise");
+    await page.getByRole("button", { name: "Close" }).click();
 
-  //   //close franchise
-  //   await page
-  //     .getByRole("row", { name: "testfranchise pizza" })
-  //     .getByRole("button")
-  //     .click();
-  //   expect(page.url()).toContain("/close-franchise");
-  //   await page.getByRole("button", { name: "Close" }).click();
-  // });
+    //verify deletion
+    await page.locator("tbody.divide-y").first().waitFor();
+    await expect(page.getByRole("table")).not.toContainText(testFranchiseName);
+    franchiseCount = await page.locator("tbody.divide-y").count();
+    expect(franchiseCount).toEqual(3);
+  });
 
   // // todo: add error message
 });

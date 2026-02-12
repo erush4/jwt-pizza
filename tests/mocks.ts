@@ -135,10 +135,17 @@ async function menuMock(page: Page) {
 }
 async function franchisesMock(page: Page) {
   let idNum = 4;
-  let franchises: Franchise[] = [
+  const franchiseUser = validUsers["franchisee"];
+  const franchises: Franchise[] = [
     {
       id: 1,
-      admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
+      admins: [
+        {
+          id: franchiseUser.id,
+          name: franchiseUser.name,
+          email: franchiseUser.email!,
+        },
+      ],
       name: "LotaPizza",
       stores: [
         { id: 4, name: "Lehi" },
@@ -155,7 +162,7 @@ async function franchisesMock(page: Page) {
     {
       id: 3,
       name: "topSpot",
-      admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
+      admins: [{ id: 3, name: "test franchisee", email: "test@test.com" }],
       stores: [],
     },
   ];
@@ -172,32 +179,52 @@ async function franchisesMock(page: Page) {
       case "POST":
         hasAuthToken(route);
         const newFranchise: Franchise = route.request().postDataJSON();
+        const adminEmails = newFranchise.admins!.map((admin) => admin.email);
+        const newAdmins = adminEmails.flatMap((email) => {
+          const user = Object.values(validUsers).find((u) => u.email === email);
+          return user?.email
+            ? [
+                {
+                  email: user.email,
+                  id: user.id,
+                  name: user.name,
+                },
+              ]
+            : [];
+        });
         newFranchise.id = idNum++;
+        newFranchise.admins = newAdmins;
         franchises.push(newFranchise);
         await route.fulfill({ json: newFranchise });
         break;
     }
+  });
+  await page.route("*/**/api/franchise/*", async (route) => {
+    const method = route.request().method();
+    const user = validUsers["franchisee"];
 
-  //   await page.route("**/api/franchise/*", async (route) => {
-  //   const method = route.request().method();
-  //   const user = validUsers["franchisee"];
-    
-  //   switch (method) {
-  //     case "GET":
-  //       await hasAuthToken(route);
-  //       // Filter franchises for the franchisee user
-  //       const userFranchises = franchises.filter(f => 
-  //         f.admins?.some(admin => admin.email === user.email)
-  //       );
-  //       await route.fulfill({ json: userFranchises });
-  //       break;
-      
-  //     case "DELETE":
-  //       // Handle delete if needed
-  //       break;
-  //   }
-  // });
+    switch (method) {
+      case "GET":
+        await hasAuthToken(route);
+        // Filter franchises for the franchisee user
+        const userFranchises = franchises.filter((f) =>
+          f.admins?.some((admin) => admin.email === user.email),
+        );
+        await route.fulfill({ json: userFranchises });
+        break;
 
+      case "DELETE":
+        await hasAuthToken(route);
+        const urlParts = route.request().url().split("/");
+        const franchiseId: number = Number(urlParts[urlParts.length - 1]);
+
+        const index = franchises.findIndex((f) => f.id === franchiseId);
+        if (index !== -1) {
+          franchises.splice(index, 1);
+        }
+        route.fulfill({ json: { message: "franchise deleted" } });
+        break;
+    }
   });
 }
 
@@ -319,7 +346,7 @@ export {
   orderMock,
   jwtMock,
   login,
-  getUserFranchiseMock,
+  fakeMock as getUserFranchiseMock,
   authTokenValue,
   validUsers,
 };
