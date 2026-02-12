@@ -1,6 +1,6 @@
 import { Page, Route } from "@playwright/test";
 import { expect } from "playwright-test-coverage";
-import { User, Role } from "../src/service/pizzaService";
+import { User, Role, Franchise } from "../src/service/pizzaService";
 
 const pizzaFactoryUrl = process.env.VITE_PIZZA_FACTORY_URL;
 
@@ -22,28 +22,28 @@ async function login(page: Page, user: User) {
 
 const validUsers: Record<string, User> = {
   diner: {
-    id: "3",
+    id: 3,
     name: "Kai Chen",
     email: "d@test.com",
     password: "a",
     roles: [{ role: Role.Diner }],
   },
   franchisee: {
-    id: "10",
+    id: 10,
     name: "Best Pizza",
     email: "pizza@test.com",
     password: "b",
     roles: [{ role: Role.Franchisee }],
   },
   admin: {
-    id: "7",
+    id: 7,
     name: "Head Honcho",
     email: "admin@test.com",
     password: "c",
     roles: [{ role: Role.Admin }],
   },
   new: {
-    id: "1000",
+    id: 1000,
     name: "newbie",
     email: "new@test.com",
     password: "d",
@@ -133,37 +133,71 @@ async function menuMock(page: Page) {
     await route.fulfill({ json: menuRes });
   });
 }
-
-async function getFranchisesMock(page: Page) {
-  await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
-    const franchiseRes = {
-      franchises: [
-        {
-          id: 2,
-          admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
-          name: "LotaPizza",
-          stores: [
-            { id: 4, name: "Lehi" },
-            { id: 5, name: "Springville" },
-            { id: 6, name: "American Fork" },
-          ],
-        },
-        {
-          id: 3,
-          name: "PizzaCorp",
-          admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
-          stores: [{ id: 7, name: "Spanish Fork" }],
-        },
-        {
-          id: 4,
-          name: "topSpot",
-          admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
-          stores: [],
-        },
+async function franchisesMock(page: Page) {
+  let idNum = 4;
+  let franchises: Franchise[] = [
+    {
+      id: 1,
+      admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
+      name: "LotaPizza",
+      stores: [
+        { id: 4, name: "Lehi" },
+        { id: 5, name: "Springville" },
+        { id: 6, name: "American Fork" },
       ],
-    };
-    expect(route.request().method()).toBe("GET");
-    await route.fulfill({ json: franchiseRes });
+    },
+    {
+      id: 2,
+      name: "PizzaCorp",
+      admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
+      stores: [{ id: 7, name: "Spanish Fork" }],
+    },
+    {
+      id: 3,
+      name: "topSpot",
+      admins: [{ id: 3, name: "test franchisee", email: "test@test/com" }],
+      stores: [],
+    },
+  ];
+  await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
+    //handle route methods
+    const method = route.request().method();
+    switch (method) {
+      case "GET":
+        const franchiseRes = {
+          franchises: franchises,
+        };
+        await route.fulfill({ json: franchiseRes });
+        break;
+      case "POST":
+        hasAuthToken(route);
+        const newFranchise: Franchise = route.request().postDataJSON();
+        newFranchise.id = idNum++;
+        franchises.push(newFranchise);
+        await route.fulfill({ json: newFranchise });
+        break;
+    }
+
+  //   await page.route("**/api/franchise/*", async (route) => {
+  //   const method = route.request().method();
+  //   const user = validUsers["franchisee"];
+    
+  //   switch (method) {
+  //     case "GET":
+  //       await hasAuthToken(route);
+  //       // Filter franchises for the franchisee user
+  //       const userFranchises = franchises.filter(f => 
+  //         f.admins?.some(admin => admin.email === user.email)
+  //       );
+  //       await route.fulfill({ json: userFranchises });
+  //       break;
+      
+  //     case "DELETE":
+  //       // Handle delete if needed
+  //       break;
+  //   }
+  // });
+
   });
 }
 
@@ -274,13 +308,14 @@ async function getUserFranchiseMock(page: Page) {
     }
   });
 }
+
 async function fakeMock(page: Page) {
   await page.route("route", async (route) => {});
 }
 export {
   authMock,
   menuMock,
-  getFranchisesMock,
+  franchisesMock,
   orderMock,
   jwtMock,
   login,
