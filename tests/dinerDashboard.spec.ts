@@ -1,9 +1,11 @@
 import { expect, test } from "playwright-test-coverage";
 import { authMock, login, orderMock, updateUserMock, validUsers } from "./mocks";
+import { authMock, login, orderMock, updateUserMock, validUsers } from "./mocks";
 
 test.beforeEach(async ({ page }) => {
   await authMock(page);
   await orderMock(page);
+  await updateUserMock(page);
   await updateUserMock(page);
   await page.goto("/");
 });
@@ -23,6 +25,7 @@ test("dinerDashboard opens", async ({ page }) => {
   expect(page.url()).toContain("/diner-dashboard");
   await expect(page.getByTestId("username")).toContainText(user.name!);
   await expect(page.getByTestId("email")).toContainText(user.email!);
+  await expect(page.getByTestId("roles")).toContainText("diner");
   await expect(page.getByTestId("roles")).toContainText("diner");
 
   expect(await page.getByTestId("orders").locator("tr").count()).toBe(2);
