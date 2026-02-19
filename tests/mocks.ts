@@ -133,6 +133,7 @@ async function menuMock(page: Page) {
     await route.fulfill({ json: menuRes });
   });
 }
+
 async function franchisesMock(page: Page) {
   let idNum = 4;
   const franchiseUser = validUsers["franchisee"];
@@ -202,7 +203,6 @@ async function franchisesMock(page: Page) {
   await page.route("*/**/api/franchise/*", async (route) => {
     const method = route.request().method();
     const user = validUsers["franchisee"];
-
     switch (method) {
       case "GET":
         await hasAuthToken(route);
@@ -332,7 +332,24 @@ async function getUserFranchiseMock(page: Page) {
         break;
 
       case "DELETE":
+      //TODO: mock this
     }
+  });
+}
+
+async function updateUserMock(page: Page) {
+  await page.route("*/**/api/user/*", async (route) => {
+    expect(route.request().method()).toBe("PUT");
+    const urlParts = route.request().url().split("/");
+    const userid = Number(urlParts[urlParts.length - 1]);
+    const user = Object.values(validUsers).find((u) => u.id === userid);
+    const updates = route.request().postDataJSON();
+    user!.email = updates.email;
+    if (updates.password) {
+      user!.password = updates.password;
+    }
+    user!.name = updates.name;
+    route.fulfill({ json: { user: user, token: authTokenValue } });
   });
 }
 
@@ -346,7 +363,8 @@ export {
   orderMock,
   jwtMock,
   login,
-  fakeMock as getUserFranchiseMock,
+  getUserFranchiseMock,
+  updateUserMock,
   authTokenValue,
   validUsers,
 };
