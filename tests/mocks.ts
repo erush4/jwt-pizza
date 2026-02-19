@@ -337,12 +337,32 @@ async function getUserFranchiseMock(page: Page) {
   });
 }
 
+async function listUsersMock(page: Page) {
+  await page.route(/.*\/api\/user\?page=\d+&limit=\d+&name=.*/, async (route) => {
+    expect(route.request().method()).toBe("GET");
+    await hasAuthToken(route);
+    const url = new URL(route.request().url());
+    const page = Number(url.searchParams.get("page")) - 1;
+    const limit = Number(url.searchParams.get("limit"));
+    const offset = page * limit;
+    // if you're mocking the filter, you'd better make sure it's in the backend...
+    //   const users = Object.values(validUsers)
+    // .filter(u => u.name?.includes(name))
+    // .slice((page - 1) * limit, page * limit);
+    const userArray = Object.values(validUsers);
+    const users = userArray.slice(offset, limit);
+    const more = offset + limit < userArray.length;
+    await route.fulfill({ json: { users: users, more: more } });
+  });
+}
+
 async function updateUserMock(page: Page) {
-  await page.route("*/**/api/user/*", async (route) => {
+  await page.route(/.*\/api\/user\/\d+/, async (route) => {
     expect(route.request().method()).toBe("PUT");
     const urlParts = route.request().url().split("/");
     const userid = Number(urlParts[urlParts.length - 1]);
     const user = Object.values(validUsers).find((u) => u.id === userid);
+    await hasAuthToken(route);
     const updates = route.request().postDataJSON();
     user!.email = updates.email;
     if (updates.password) {
@@ -365,6 +385,7 @@ export {
   login,
   getUserFranchiseMock,
   updateUserMock,
+  listUsersMock,
   authTokenValue,
   validUsers,
 };

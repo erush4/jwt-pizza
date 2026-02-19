@@ -1,12 +1,20 @@
 import { expect, test } from "playwright-test-coverage";
-import { authMock, franchisesMock, login, validUsers } from "./mocks";
+import {
+  authMock,
+  franchisesMock,
+  listUsersMock,
+  login,
+  validUsers,
+} from "./mocks";
 
 test.beforeEach(async ({ page }) => {
   await authMock(page);
   await franchisesMock(page);
+  await listUsersMock(page);
   await page.goto("/");
   const user = validUsers["admin"];
   await login(page, user);
+  await page.getByRole("link", { name: "Admin" }).click();
 });
 
 test.afterEach(async ({ page }) => {
@@ -19,19 +27,21 @@ test.afterEach(async ({ page }) => {
 
 test.describe("admin dashboard", () => {
   test("dashboard opens", async ({ page }) => {
-    await page.getByRole("link", { name: "Admin" }).click();
     expect(page.url()).toContain("/admin-dashboard");
     await page.locator("tbody.divide-y").first().waitFor();
-    const franchiseCount = await page.locator("tbody.divide-y").count();
+    const franchiseTable = page.getByTestId("franchiselist");
+    const franchiseCount = await franchiseTable
+      .locator("tbody.divide-y")
+      .count();
     expect(franchiseCount).toEqual(3);
-    const totalStores = await page.locator("tr.bg-neutral-100").count();
+    const totalStores = await franchiseTable
+      .locator("tr.bg-neutral-100")
+      .count();
     expect(totalStores).toEqual(4);
   });
 
   test("create and close franchise", async ({ page }) => {
     const testFranchiseName = "test pizza franchise";
-    await page.getByRole("link", { name: "Admin" }).click();
-
     //add franchise
     await page.getByRole("button", { name: "Add Franchise" }).click();
     await page
@@ -44,8 +54,9 @@ test.describe("admin dashboard", () => {
 
     //verify franchise
     await page.locator("tbody.divide-y").first().waitFor();
-    await expect(page.getByRole("table")).toContainText("test franchise");
-    let franchiseCount = await page.locator("tbody.divide-y").count();
+    let franchiseTable = page.getByTestId("franchiselist");
+    await expect(franchiseTable).toContainText("test franchise");
+    let franchiseCount = await franchiseTable.locator("tbody.divide-y").count();
     expect(franchiseCount).toEqual(4);
     //close franchise
     await page
@@ -57,9 +68,20 @@ test.describe("admin dashboard", () => {
 
     //verify deletion
     await page.locator("tbody.divide-y").first().waitFor();
-    await expect(page.getByRole("table")).not.toContainText(testFranchiseName);
-    franchiseCount = await page.locator("tbody.divide-y").count();
+    franchiseTable = page.getByTestId("franchiselist");
+    await expect(franchiseTable).not.toContainText(testFranchiseName);
+    franchiseCount = await franchiseTable.locator("tbody.divide-y").count();
     expect(franchiseCount).toEqual(3);
+  });
+
+  test("list users", async ({ page }) => {
+    let userTable = page.getByTestId("userlist");
+    for (const user of Object.values(validUsers)) {
+      const row = userTable
+        .locator("tbody.divide-y")
+        .filter({ hasText: user.name });
+      await expect(row).toContainText(user.email!);
+    }
   });
 
   // // todo: add error message
