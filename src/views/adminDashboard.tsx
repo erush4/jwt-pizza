@@ -36,9 +36,14 @@ export default function AdminDashboard(props: Props) {
   React.useEffect(() => {
     (async () => {
       setFranchiseList(await pizzaService.getFranchises(franchisePage, 3, "*"));
-      setUserList(await pizzaService.getUsers(userPage, 10, "*"));
     })();
   }, [props.user, franchisePage]);
+
+  React.useEffect(() => {
+    (async () => {
+      setUserList(await pizzaService.getUsers(userPage, 10, "*"));
+    })();
+  }, [props.user, userPage]);
 
   function createFranchise() {
     navigate("/admin-dashboard/create-franchise");
@@ -91,7 +96,10 @@ export default function AdminDashboard(props: Props) {
               <div className="-m-1.5 overflow-x-auto">
                 <div className="p-1.5 min-w-full inline-block align-middle">
                   <div className="overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200" data-testid="userlist">
+                    <table
+                      className="min-w-full divide-y divide-gray-200"
+                      data-testid="userlist"
+                    >
                       <thead className="uppercase text-neutral-100 bg-slate-400 border-b-2 border-gray-500">
                         <tr>
                           {["Name", "Email", "Roles", "Action"].map(
@@ -161,18 +169,14 @@ export default function AdminDashboard(props: Props) {
                           >
                             <button
                               className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300 "
-                              onClick={() =>
-                                setUserPage(userPage - 1)
-                              }
+                              onClick={() => setUserPage(userPage - 1)}
                               disabled={userPage <= 0}
                             >
                               «
                             </button>
                             <button
                               className="w-12 p-1 text-sm font-semibold rounded-lg border border-transparent bg-white text-grey border-grey m-1 hover:bg-orange-200 disabled:bg-neutral-300"
-                              onClick={() =>
-                                setFranchisePage(userPage + 1)
-                              }
+                              onClick={() => setUserPage(userPage + 1)}
                               disabled={!userList.more}
                             >
                               »
@@ -192,7 +196,10 @@ export default function AdminDashboard(props: Props) {
               <div className="-m-1.5 overflow-x-auto">
                 <div className="p-1.5 min-w-full inline-block align-middle">
                   <div className="overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200" data-testid="franchiselist">
+                    <table
+                      className="min-w-full divide-y divide-gray-200"
+                      data-testid="franchiselist"
+                    >
                       <thead className="uppercase text-neutral-100 bg-slate-400 border-b-2 border-gray-500">
                         <tr>
                           {[

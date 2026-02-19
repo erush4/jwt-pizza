@@ -3,6 +3,7 @@ import {
   authMock,
   franchisesMock,
   listUsersMock,
+  listUsersPageMock,
   login,
   validUsers,
 } from "./mocks";
@@ -14,7 +15,6 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
   const user = validUsers["admin"];
   await login(page, user);
-  await page.getByRole("link", { name: "Admin" }).click();
 });
 
 test.afterEach(async ({ page }) => {
@@ -27,9 +27,11 @@ test.afterEach(async ({ page }) => {
 
 test.describe("admin dashboard", () => {
   test("dashboard opens", async ({ page }) => {
+    await page.getByRole("link", { name: "Admin" }).click();
     expect(page.url()).toContain("/admin-dashboard");
-    await page.locator("tbody.divide-y").first().waitFor();
     const franchiseTable = page.getByTestId("franchiselist");
+    await franchiseTable.locator("tbody.divide-y").first().waitFor();
+
     const franchiseCount = await franchiseTable
       .locator("tbody.divide-y")
       .count();
@@ -41,6 +43,7 @@ test.describe("admin dashboard", () => {
   });
 
   test("create and close franchise", async ({ page }) => {
+    await page.getByRole("link", { name: "Admin" }).click();
     const testFranchiseName = "test pizza franchise";
     //add franchise
     await page.getByRole("button", { name: "Add Franchise" }).click();
@@ -53,8 +56,8 @@ test.describe("admin dashboard", () => {
     await page.getByRole("button", { name: "Create" }).click();
 
     //verify franchise
-    await page.locator("tbody.divide-y").first().waitFor();
     let franchiseTable = page.getByTestId("franchiselist");
+    await franchiseTable.locator("tbody.divide-y").first().waitFor();
     await expect(franchiseTable).toContainText("test franchise");
     let franchiseCount = await franchiseTable.locator("tbody.divide-y").count();
     expect(franchiseCount).toEqual(4);
@@ -67,7 +70,7 @@ test.describe("admin dashboard", () => {
     await page.getByRole("button", { name: "Close" }).click();
 
     //verify deletion
-    await page.locator("tbody.divide-y").first().waitFor();
+    await franchiseTable.locator("tbody.divide-y").first().waitFor();
     franchiseTable = page.getByTestId("franchiselist");
     await expect(franchiseTable).not.toContainText(testFranchiseName);
     franchiseCount = await franchiseTable.locator("tbody.divide-y").count();
@@ -75,6 +78,7 @@ test.describe("admin dashboard", () => {
   });
 
   test("list users", async ({ page }) => {
+    await page.getByRole("link", { name: "Admin" }).click();
     let userTable = page.getByTestId("userlist");
     for (const user of Object.values(validUsers)) {
       const row = userTable
@@ -82,6 +86,45 @@ test.describe("admin dashboard", () => {
         .filter({ hasText: user.name });
       await expect(row).toContainText(user.email!);
     }
+  });
+  test("list users pagination", async ({ page }) => {
+    //add page mock
+    const path = /.*\/api\/user\?page=\d+&limit=\d+&name=.*/;
+    await page.unroute(path);
+    const limit = 2;
+    await listUsersPageMock(page, limit);
+
+    //navigate
+    await page.getByRole("link", { name: "Admin" }).click();
+    const userTable = page.getByTestId("userlist");
+
+    //verify first page
+    await userTable.locator("tbody.divide-y").first().waitFor();
+    let userCount = await userTable.locator("tbody.divide-y").count();
+    expect(userCount).toBe(limit);
+    const backButton = userTable.getByRole("button", { name: "«" });
+    const nextButton = userTable.getByRole("button", { name: "»" });
+    let firstRow = userTable.locator("tbody.divide-y").nth(0);
+    const before = await firstRow.textContent();
+    await expect(backButton).toBeDisabled();
+    await expect(nextButton).toBeEnabled();
+
+    //verify next page
+    await nextButton.click();
+    await userTable.locator("tbody.divide-y").first().waitFor();
+
+    userCount = await userTable.locator("tbody.divide-y").count();
+    expect(userCount).toBeLessThanOrEqual(limit);
+    firstRow = userTable.locator("tbody.divide-y").nth(0);
+    await expect(firstRow).not.toHaveText(before!);
+    await expect(backButton).toBeEnabled();
+
+    //verify first page didn't change
+    await backButton.click();
+    await userTable.locator("tbody.divide-y").first().waitFor();
+    await expect(backButton).toBeDisabled();
+    await expect(nextButton).toBeEnabled();
+    await expect(firstRow).toHaveText(before!);
   });
 
   // // todo: add error message
