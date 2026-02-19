@@ -1,6 +1,5 @@
 import { expect, test } from "playwright-test-coverage";
 import { authMock, login, orderMock, updateUserMock, validUsers } from "./mocks";
-import { authMock, login, orderMock, updateUserMock, validUsers } from "./mocks";
 
 test.beforeEach(async ({ page }) => {
   await authMock(page);
