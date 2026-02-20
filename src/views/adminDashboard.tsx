@@ -39,9 +39,13 @@ export default function AdminDashboard(props: Props) {
     })();
   }, [props.user, franchisePage]);
 
+  async function fetchUsers() {
+    setUserList(await pizzaService.getUsers(userPage, 10, "*"));
+  }
+
   React.useEffect(() => {
     (async () => {
-      setUserList(await pizzaService.getUsers(userPage, 10, "*"));
+      fetchUsers();
     })();
   }, [props.user, userPage]);
 
@@ -82,7 +86,8 @@ export default function AdminDashboard(props: Props) {
   }
 
   async function deleteUser(user: User) {
-    return;
+    await pizzaService.deleteUser(user);
+    fetchUsers();
   }
 
   let response = <NotFound />;

@@ -82,6 +82,10 @@ class HttpPizzaService implements PizzaService {
     localStorage.removeItem("token");
   }
 
+  async deleteUser(user: User): Promise<null> {
+    return this.callEndpoint(`/api/user/${user.id}`, "DELETE");
+  }
+
   async getUser(): Promise<User | null> {
     let result: User | null = null;
     if (localStorage.getItem("token")) {

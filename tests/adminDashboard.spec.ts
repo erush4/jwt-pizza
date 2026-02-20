@@ -6,6 +6,7 @@ import {
   listUsersPageMock,
   login,
   testUsers,
+  updateUserMock,
   validUsers,
 } from "./mocks";
 
@@ -14,6 +15,7 @@ test.beforeEach(async ({ page }) => {
   await authMock(page);
   await franchisesMock(page);
   await listUsersMock(page);
+  updateUserMock(page);
   await page.goto("/");
   const user = testUsers["admin"];
   await login(page, user);
@@ -83,7 +85,7 @@ test.describe("admin dashboard", () => {
   test.describe("listUsers", () => {
     test("list users", async ({ page }) => {
       await page.getByRole("link", { name: "Admin" }).click();
-      let userTable = page.getByTestId("userlist");
+      const userTable = page.getByTestId("userlist");
       let userCount = 0;
       await userTable.locator("tbody.divide-y").first().waitFor();
       for (const user of Object.values(validUsers)) {
@@ -173,5 +175,24 @@ test.describe("admin dashboard", () => {
       userCount = await userTable.locator("tbody.divide-y").count();
       expect(userCount).toBe(Object.keys(validUsers).length);
     });
+  });
+
+  test("deleteUser", async ({ page }) => {
+    await page.getByRole("link", { name: "Admin" }).click();
+    const userTable = page.getByTestId("userlist");
+    await userTable.locator("tbody.divide-y").first().waitFor();
+    const beforeCount = await userTable.locator("tbody.divide-y").count();
+    expect(beforeCount).toBe(Object.keys(validUsers).length);
+    const user = validUsers["diner"];
+    const deleteResponse = page.waitForResponse(/.*\/api\/user\/\d+/);
+    await userTable
+      .locator("tbody.divide-y")
+      .filter({ hasText: user.name! })
+      .getByRole("button")
+      .click();
+    await deleteResponse;
+    await userTable.locator("tbody.divide-y").first().waitFor();
+    const newCount = await userTable.locator("tbody.divide-y").count();
+    expect(newCount).toBe(beforeCount - 1);
   });
 });

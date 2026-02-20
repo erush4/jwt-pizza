@@ -104,6 +104,8 @@ async function authMock(page: Page) {
         };
         await route.fulfill({ json: registerRes });
         break;
+      default:
+        route.fallback();
     }
   });
 
@@ -202,6 +204,8 @@ async function franchisesMock(page: Page) {
         franchises.push(newFranchise);
         await route.fulfill({ json: newFranchise });
         break;
+      default:
+        route.fallback();
     }
   });
   await page.route("*/**/api/franchise/*", async (route) => {
@@ -228,6 +232,8 @@ async function franchisesMock(page: Page) {
         }
         route.fulfill({ json: { message: "franchise deleted" } });
         break;
+      default:
+        route.fallback();
     }
   });
 }
@@ -278,6 +284,8 @@ async function orderMock(page: Page) {
           },
         });
         break;
+      default:
+        route.fallback();
     }
   });
 }
@@ -390,21 +398,33 @@ async function listUsersPageMock(page: Page, limit: number) {
 
 async function updateUserMock(page: Page) {
   await page.route(/.*\/api\/user\/\d+/, async (route) => {
-    expect(route.request().method()).toBe("PUT");
+    const method = route.request().method();
     const urlParts = route.request().url().split("/");
     const userid = Number(urlParts[urlParts.length - 1]);
-    const user = Object.values(validUsers).find((u) => u.id === userid);
     await hasAuthToken(route);
-    const updates = route.request().postDataJSON();
-    user!.email = updates.email;
-    if (updates.password) {
-      user!.password = updates.password;
+    switch (method) {
+      case "PUT":
+        const user = Object.values(validUsers).find((u) => u.id === userid);
+        const updates = route.request().postDataJSON();
+        user!.email = updates.email;
+        if (updates.password) {
+          user!.password = updates.password;
+        }
+        user!.name = updates.name;
+        route.fulfill({ json: { user: user, token: authTokenValue } });
+        break;
+      case "DELETE":
+        const key = Object.keys(validUsers).find(
+          (k) => validUsers[k].id === userid,
+        );
+        if (key) delete validUsers[key];
+        await route.fulfill({ json: { message: "user deleted" } });
+        break;
+      default:
+        route.fallback();
     }
-    user!.name = updates.name;
-    route.fulfill({ json: { user: user, token: authTokenValue } });
   });
 }
-
 //for copy/paste purposes
 async function fakeMock(page: Page) {
   await page.route("route", async (route) => {});
