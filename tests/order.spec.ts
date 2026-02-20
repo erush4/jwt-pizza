@@ -4,7 +4,7 @@ import {
   menuMock,
   franchisesMock,
   orderMock,
-  validUsers,
+  testUsers,
   jwtMock,
 } from "./mocks";
 
@@ -42,7 +42,7 @@ test("purchase pizza", async ({ page }) => {
   await page.getByRole("button", { name: "Checkout" }).click();
 
   // Login — can't use default login since we would lose the order
-  const user = validUsers["diner"];
+  const user = testUsers["diner"];
   expect(page.url()).toContain("/payment/login");
   await page.getByPlaceholder("Email address").click();
   await page.getByPlaceholder("Email address").fill(user.email!);

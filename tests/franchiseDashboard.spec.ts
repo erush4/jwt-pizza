@@ -3,7 +3,7 @@ import {
   authMock,
   franchisesMock,
   login,
-  validUsers,
+  testUsers,
   getUserFranchiseMock,
 } from "./mocks";
 
@@ -23,7 +23,7 @@ test.afterEach(async ({ page }) => {
 });
 
 test("franchise dashboard opens", async ({ page }) => {
-  const user = validUsers["franchisee"];
+  const user = testUsers["franchisee"];
   await login(page, user);
   await page
     .getByLabel("Global")

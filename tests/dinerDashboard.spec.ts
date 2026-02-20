@@ -1,5 +1,5 @@
 import { expect, test } from "playwright-test-coverage";
-import { authMock, login, orderMock, updateUserMock, validUsers } from "./mocks";
+import { authMock, login, orderMock, updateUserMock, testUsers } from "./mocks";
 
 test.beforeEach(async ({ page }) => {
   await authMock(page);
@@ -18,7 +18,7 @@ test.afterEach(async ({ page }) => {
 });
 
 test("dinerDashboard opens", async ({ page }) => {
-  const user = validUsers["diner"];
+  const user = testUsers["diner"];
   await login(page, user);
   await page.getByTestId("diner-dash").click();
   expect(page.url()).toContain("/diner-dashboard");
@@ -31,7 +31,7 @@ test("dinerDashboard opens", async ({ page }) => {
 });
 
 test("updateUser works and persists", async ({ page }) => {
-  const user = validUsers["diner"];
+  const user = testUsers["diner"];
   const newName = "pizzaDinerX";
   await login(page, user);
 

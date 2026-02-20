@@ -151,8 +151,8 @@ export default function AdminDashboard(props: Props) {
                             <input
                               type="text"
                               ref={filterUserRef}
-                              name="filterFranchise"
-                              placeholder="Filter franchises"
+                              name="filterUser"
+                              placeholder="Filter users"
                               className="px-2 py-1 text-sm border border-gray-300 rounded-lg"
                             />
                             <button

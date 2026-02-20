@@ -5,15 +5,17 @@ import {
   listUsersMock,
   listUsersPageMock,
   login,
+  testUsers,
   validUsers,
 } from "./mocks";
 
 test.beforeEach(async ({ page }) => {
+  await page.unrouteAll();
   await authMock(page);
   await franchisesMock(page);
   await listUsersMock(page);
   await page.goto("/");
-  const user = validUsers["admin"];
+  const user = testUsers["admin"];
   await login(page, user);
 });
 
@@ -52,7 +54,7 @@ test.describe("admin dashboard", () => {
       .fill(testFranchiseName);
     await page
       .getByRole("textbox", { name: "franchisee admin email" })
-      .fill(validUsers["franchisee"].email!);
+      .fill(testUsers["franchisee"].email!);
     await page.getByRole("button", { name: "Create" }).click();
 
     //verify franchise
@@ -80,13 +82,18 @@ test.describe("admin dashboard", () => {
   test("list users", async ({ page }) => {
     await page.getByRole("link", { name: "Admin" }).click();
     let userTable = page.getByTestId("userlist");
+    let userCount = 0;
+    await userTable.locator("tbody.divide-y").first().waitFor();
     for (const user of Object.values(validUsers)) {
+      userCount++;
       const row = userTable
         .locator("tbody.divide-y")
         .filter({ hasText: user.name });
       await expect(row).toContainText(user.email!);
     }
+    expect(userCount).toBe(Object.keys(validUsers).length);
   });
+
   test("list users pagination", async ({ page }) => {
     //add page mock
     const path = /.*\/api\/user\?page=\d+&limit=\d+&name=.*/;
@@ -125,6 +132,44 @@ test.describe("admin dashboard", () => {
     await expect(backButton).toBeDisabled();
     await expect(nextButton).toBeEnabled();
     await expect(firstRow).toHaveText(before!);
+  });
+
+  test("list users filtering", async ({ page }) => {
+    await page.getByRole("link", { name: "Admin" }).click();
+    const userTable = page.getByTestId("userlist");
+    await userTable.locator("tbody.divide-y").first().waitFor();
+    let userCount = await userTable.locator("tbody.divide-y").count();
+    expect(userCount).toBe(Object.keys(validUsers).length);
+    const user = testUsers["diner"];
+
+    //filter all but one
+    await page
+      .getByTestId("userlist")
+      .getByRole("textbox", { name: "Filter users" })
+      .fill(user.name!);
+    await page
+      .getByTestId("userlist")
+      .getByRole("button", { name: "Submit" })
+      .click();
+    await userTable.locator("tbody.divide-y").first().waitFor();
+    userCount = await userTable.locator("tbody.divide-y").count();
+    expect(userCount).toBe(1);
+    await expect(
+      userTable.locator("tbody.divide-y").filter({ hasText: user.name! }),
+    ).toContainText(user.email!);
+
+    // back to normal
+    await page
+      .getByTestId("userlist")
+      .getByRole("textbox", { name: "Filter users" })
+      .fill("");
+    await page
+      .getByTestId("userlist")
+      .getByRole("button", { name: "Submit" })
+      .click();
+    await userTable.locator("tbody.divide-y").first().waitFor();
+    userCount = await userTable.locator("tbody.divide-y").count();
+    expect(userCount).toBe(Object.keys(validUsers).length);
   });
 
   // // todo: add error message

@@ -20,7 +20,7 @@ async function login(page: Page, user: User) {
   await page.getByTestId("submit").click();
 }
 
-const validUsers: Record<string, User> = {
+const testUsers: Record<string, User> = {
   diner: {
     id: 3,
     name: "Kai Chen",
@@ -50,6 +50,9 @@ const validUsers: Record<string, User> = {
     roles: [{ role: Role.Diner }],
   },
 };
+
+const validUsers = structuredClone(testUsers);
+delete validUsers["new"];
 
 async function authMock(page: Page) {
   let loggedInUser: User | undefined;
@@ -84,7 +87,7 @@ async function authMock(page: Page) {
         await route.fulfill({ json: { message: "logout successful" } });
         break;
 
-      //register
+      //register (will only work with new user)
       case "POST":
         const registerReq = route.request().postDataJSON();
         if (!registerReq.email || !registerReq.name || !registerReq.password) {
@@ -93,7 +96,8 @@ async function authMock(page: Page) {
             json: { error: "name, email, and password are required" },
           });
         }
-        loggedInUser = validUsers["new"];
+        loggedInUser = testUsers["new"];
+        validUsers["new"] = testUsers["new"];
         const registerRes = {
           user: loggedInUser,
           token: authTokenValue,
@@ -344,15 +348,18 @@ async function listUsersMock(page: Page) {
       expect(route.request().method()).toBe("GET");
       await hasAuthToken(route);
       const url = new URL(route.request().url());
-      const page = Number(url.searchParams.get("page")) - 1;
+      const page = Number(url.searchParams.get("page"));
       const limit = Number(url.searchParams.get("limit"));
       const offset = page * limit;
-      // if you're mocking the filter, you'd better make sure it's in the backend...
-      //   const users = Object.values(validUsers)
-      // .filter(u => u.name?.includes(name))
-      // .slice((page - 1) * limit, page * limit);
-      const userArray = Object.values(validUsers);
-      const users = userArray.slice(offset, limit);
+      const filter = url.searchParams.get("name") ?? "*";
+      const regex = new RegExp(filter.replace(/\*/g, ".*"));
+      const userArray = Object.values(validUsers).filter(
+        (u) => u.name && regex.test(u.name),
+      );
+      const users = userArray.slice(offset, offset + limit).map((u) => ({
+        ...u,
+        roles: u.roles!.map((r) => r.role),
+      }));
       const more = offset + limit < userArray.length;
       await route.fulfill({ json: { users: users, more: more } });
     },
@@ -370,7 +377,11 @@ async function listUsersPageMock(page: Page, limit: number) {
       const offset = pageNum * limit;
       // no tests with the pagination AND filter
       const userArray = Object.values(validUsers);
-      const users = userArray.slice(offset, offset + limit);
+      const users = userArray.slice(offset, offset + limit).map((u) => ({
+        ...u,
+        roles: u.roles!.map((r) => r.role),
+      }));
+
       const more = offset + limit < userArray.length;
       await route.fulfill({ json: { users: users, more: more } });
     },
@@ -394,6 +405,7 @@ async function updateUserMock(page: Page) {
   });
 }
 
+//for copy/paste purposes
 async function fakeMock(page: Page) {
   await page.route("route", async (route) => {});
 }
@@ -409,5 +421,6 @@ export {
   listUsersMock,
   listUsersPageMock,
   authTokenValue,
+  testUsers,
   validUsers,
 };

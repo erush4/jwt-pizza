@@ -1,5 +1,5 @@
 import { expect, test } from "playwright-test-coverage";
-import { authMock, authTokenValue, login, validUsers } from "./mocks";
+import { authMock, authTokenValue, login, testUsers } from "./mocks";
 
 test.beforeEach(async ({ page }) => {
   await authMock(page);
@@ -16,7 +16,7 @@ test.afterEach(async ({ page }) => {
 
 test.describe("login", () => {
   test("login diner", async ({ page }) => {
-    await login(page, validUsers["diner"]);
+    await login(page, testUsers["diner"]);
     await expect(page.getByTestId("diner-dash")).toBeVisible();
     await expect(page.getByRole("link", { name: "Logout" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Login" })).not.toBeVisible();
@@ -32,7 +32,7 @@ test.describe("login", () => {
 });
 
 test("logout", async ({ page }) => {
-  await login(page, validUsers["diner"]);
+  await login(page, testUsers["diner"]);
   await page.getByRole("link", { name: "Logout" }).click();
   await expect(page.getByRole("link", { name: "Register" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Login" })).toBeVisible();
@@ -44,7 +44,7 @@ test("logout", async ({ page }) => {
 });
 
 test("register", async ({ page }) => {
-  const user = validUsers["new"];
+  const user = testUsers["new"];
   await page.getByRole("link", { name: "Register" }).click();
   await page.getByRole("textbox", { name: "Full name" }).fill(user.name!);
   await page.getByRole("textbox", { name: "Email address" }).fill(user.email!);
