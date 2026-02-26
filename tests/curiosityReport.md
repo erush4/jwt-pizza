@@ -8,13 +8,13 @@ JWT Pizza Service doesn't have its own router class.
 
 Instead, it uses express.Router(), and creates a independent functions for each route. As a consequence, I can't do dependency injection without restructuring most of the code that deals with these routers. That woudn't be a _huge_ task, but I didn't want to risk breaking code that I knew worked before I had a way to test whether that code worked (shoutout test-driven development—if those South Provo devs had used it, I wouldn't be in this mess). Instead, I wanted to figure out a way to have a variable database name, so that I could use one (or more) database(s) for testing and one database for production.
 
-## Approach 1
+## Single Test Database
 
-The JWT Pizza Service database pulls its name from `config.js` file. The most obvious way to change the name is to use a Jest mock. Since config.js doesn't have any functions, we can't use a function mock for this. We could use a module mock, but if we separate our tests across multiple files (something I wanted to do, so that my `service.test.js` file wasn't 1200 lines long), we'd have to redeclare our mock in every file, or separate it out to its own file, create a function that makes the mock, and then import and run the function at the head of each file. Not a lot of toil, but as it happens, there's a secret third type of Jest mock designed for this situation.
+The JWT Pizza Service database pulls its name from the `config.js` file. The most obvious way to change the name is to use a Jest mock. Since config doesn't have any functions, we can't use a function mock for this. We could use a module mock, but if we separate our tests across multiple files (something I wanted to do, so that my `service.test.js` file wasn't 1200 lines long), we'd have to redeclare our mock in every file, or separate it out to its own file, create a function that makes the mock, and then import and run the function at the head of each file. Not a lot of toil, but as it happens, there's a secret third type of Jest mock designed for this situation.
 
 ### Manual Mocks
 
-A manual mock is a file that will be loaded in place of another file. They're often used to mock out Node modules (yes, you can do that) to prevent real HTTP calls, mocking multi-file systems, and mocks that are used many times across files—perfect for `config.js`, which we'll have to use in every test in order to avoid calling the real `pizza` database.
+A manual mock is a file that will be loaded in place of another file. They're often used to mock out Node modules (yes, you can do that) to prevent real HTTP calls, mocking multi-file systems, and mocks that are used many times across files—perfect for `config`, which we'll have to use in every test in order to avoid calling the real `pizza` database.
 
 To make a manual mock, you first need to create a `__mocks__` folder next to the file you plan to mock out, and then put our mock file inside with the same name as our target . In our case, that would look like this:
 
@@ -31,7 +31,7 @@ To make a manual mock, you first need to create a `__mocks__` folder next to the
 
 Side note: if you _are_ mocking something from `node_modules`, you'll need to put it in the root folder, and then name the file after the module you're mocking.
 
-Since we only want to change one thing from `config.js`, we can use another useful function: `requireActual()`.
+Since we only want to change one thing from `config`, we can use another useful function: `requireActual()`.
 
 ```javascript
 const config = jest.requireActual("../config");
@@ -48,7 +48,7 @@ module.exports = {
 };
 ```
 
-**If you don't use `requireActual()`, Jest will try to replace `config.js` with your mock and create a loop that can't be resolved.**
+**If you don't use `requireActual()`, Jest will try to replace `config` with your mock and create a loop that can't be resolved.**
 
 Now, in each of our test files, we can update our imports, from this:
 
@@ -57,8 +57,9 @@ const request = require("supertest");
 const app = require("./service");
 const config = require("./config.js");
 /*
-You might not have config in your test file. I extracted my admin username and password to config.js (for security), so I needed to import it in order to sign in as an admin.
-*/
+ * You might not have config in your test file. I extracted my admin username and password to config.js (for security), 
+ * so I needed to import it in order to sign in as an admin.
+ */
 ```
 
 to this:
@@ -114,7 +115,7 @@ module.exports = { Role, DB: db };
 
 Since the database is created before the mock takes effect, it never has the chance to see the updated name from our `config` file. There are two possible fixes to this problem:
 
-#### 1. Import first, then assign to `config
+#### 1. Import first, then assign to `config`
 
 ```javascript
 const request = require("supertest");
@@ -155,9 +156,9 @@ $ npm run test
   √ getFranchises (15 ms)
 ```
 
-## Approach 2
+## Multiple Databases
 
-The first approach works just fine, but it only creates a single database. Depending on how you write your tests, you might encounter issues caused from pre-existing test data or modifiers. For instance, if your `deleteFranchise` and `createFranchise` tests run simultaneously, your tests get a little flaky, since the number of franchises might remain the same depending on how the tests run. To tackle this issue, we need to look into the mefchanics of how Jest runs tests concurrently.
+Creating a single database is probably the way to go, but it's possible you'd want something different. Depending on how you write your tests, you might encounter issues caused from pre-existing test data or modifiers. For instance, if your `deleteFranchise` and `createFranchise` tests run simultaneously, your tests get a little flaky, since the number of franchises might remain the same depending on how the tests run. To tackle this issue, we need to look into the mefchanics of how Jest runs tests concurrently.
 
 ### Workers
 
@@ -168,11 +169,11 @@ Running 16 tests using 8 workers
   16 passed (16.8s)
 ```
 
-Workers are how tests are able to run concurrently. Although I used Playwright in the example, Jest also uses workers (they just don't display the worker count). Jest does its best to divide up your tests equally among the workers to finish testing as fast as possible. Each worker is its own process—it essentially has its own variables, copy of the code, and environment (if you've taken CS 324, you'll know the significance of this). 
+Workers are how tests are able to run concurrently. Although I used Playwright in the example, Jest also uses workers (they just don't display the worker count). Each worker is its own process—it essentially has its own variables, copy of the code, and environment (if you've taken CS 324, you'll know the significance of this). Jest will queue your test files, and each worker will take one at a time until all files have been run. The workers are set up so that they delete all the data from the previous test file before starting the next, to prevent old modules or mocks from interfering with the current test.
 
 ### Jest Setup
 
-We've already used `jest.config.js` to add coverage tracking to our tests, but now, we can add some extra configuration to get what we want:
+We've already used a `jest.config.js` file to add coverage tracking to our tests, but now, we can add some extra configuration to get what we want:
 
 ```js
 module.exports = {
@@ -182,13 +183,14 @@ module.exports = {
 };
 ```
 
-This defines a file that each worker will run once before each file: essentially, a `beforeAll` that will run before the testing framwork is initialized and the app loads. We can use this to add a per-worker name, so that each paralell process will connect to it's own database, preventing those "double access" errors.
+This defines code that each worker will run once before each file: essentially, a `beforeAll` that will run before the testing framwork is initialized and the app loads. We can use this to add a per-worker name, so that each paralell process will connect to it's own database, preventing those "double access" errors.
 
 Now, we can create the actual `jest.env.js` file.
 
 ```javascript
 const worker = process.env.JEST_WORKER_ID || "0";
-const dbName = `test_db_${worker}`;
+const dbName = `test_db_${worker}_${Date.now}`;
+//Since a single worker might run multiple files, we also add a date to distinguish sequential files
 
 process.env.TEST_DB_NAME = dbName;
 ```
@@ -201,7 +203,7 @@ This takes advantage of environment variables (global variables specific to one 
 - `process.env.TEST_DB_NAME = dbName;`
   - This creates a new enviroment variable, `TEST_DB_NAME` and gives it the value stored in `dbName`.
 
-Now that we can create a unique name for each worker, we need a way to assign it to our database. We can do this by adjusting `config.js` itself:
+Now that we have a unique name for each file, we need a way to assign it to our database. We can do this by adjusting the `config.js` file itself:
 
 ```javascript
 connection: {
@@ -213,7 +215,7 @@ connection: {
    },
 ```
 
-Now, when config.js is initialized (which will happen once per file), it will check to see if there is an an environment variable called `TEST_DB_NAME`. If it exists, that will be the name the database uses. Since we only set `TEST_DB_NAME` when we run our tests, the variable won't exist when we are really deploying, so it uses the default name `pizza`.
+Now, when config is initialized (which will happen once per file), it will check to see if there is an an environment variable called `TEST_DB_NAME`. If it exists, that will be the name the database uses. Since we only set `TEST_DB_NAME` when we run our tests, the variable won't exist when we are really deploying, so it uses the default name `pizza`.
 
 Running our tests again, we can see the databases being created.
 
@@ -238,23 +240,22 @@ Each worker will now have its own database, preventing the double-access errors 
 
 There are a number of ways to do this, but I'll highlight two.
 
-#### 1. Add an `afterAll()`
+<details open>
+<summary><h4>Approach 1: Add an `afterAll()`<h4> </summary>
 
 You might think this is strange, considering that we haven't defined any tests in our setup file. However, we don't need to—Jest handles `afterAll()` in the scope it's called in. If you've ever used a `describe()` block (like you do in CS 340), you might have added an `afterAll()` call that would run only for the tests in that block. There's something similar happening here: our `afterAll()` may not be defined in the test file, but it will run once the test file finishes.
 
+Unfortunately, we can't just drop it straight into our `jest.env.js` file. We've configured this to run _before_ the Jest framework initializes—if we hadn't, our app would be loaded, and `config` would have already initialized. As a consequence, we can't call any of the global Jest functions, including `afterAll()`.
 
-Unfortunately, we can't just drop it straight into our `jest.env.js` file. We've configured this to run *before* the Jest framework initializes—if we hadn't, our app would be loaded, and `config` would have already initialized. As a consequence, we can't call any of the global Jest functions, including `afterAll()`.
+Fortunately, Jest has another attribute: `setupFilesAfterEnv`. As you might guess, this will configure files that should run _after_ the Jest testing environment initializes, but _before_ it starts at the top of the test file. In other words, it's a little like adding a `beforeEach()` that runs for each _test file_, instead of each _test_.
 
-Fortunately, Jest has another attribute: `setupFilesAfterEnv`. As you might guess, this will configure files that should run *after* the Jest testing environment initializes, but *before* it starts at the top of the test file. In other words, it's a little like adding a `beforeEach()` that runs for each *test file*, instead of each *test*.
-
-So, we update our `jest.config.js` again, and add:
+So, we update our `jest.config.js` file again, and add:
 
 ```javascript
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
 ```
 
-to our `module.exports`, and then create `jest.setup.js`:
-
+to our `module.exports`, and then create a `jest.setup.js` file:
 
 ```javascript
 const config = require("./src/config");
@@ -269,7 +270,7 @@ afterAll(async () => {
 });
 ```
 
-Now, we can see that our test file ends up looking like this:
+Now, our test run ends up looking like this:
 
 ```shell
  PASS  src/routes/userRouter.test.js
@@ -278,7 +279,7 @@ Now, we can see that our test file ends up looking like this:
     console.log
       Checking if database test_db_1 exists...
 
-      at DB.log [as checkDatabaseExists] (src/database/database.js:539:13)        
+      at DB.log [as checkDatabaseExists] (src/database/database.js:539:13)
 
     console.log
       Database does not exist, creating test_db_1 at 127.0.0.1
@@ -298,22 +299,114 @@ Now, we can see that our test file ends up looking like this:
 
 And we can be confident that each test will have it's own, fresh database.
 
-#### 2. Global Teardown
+</details>
 
-This method isn't really the best, but I wanted to include it to introduce two other configuration files you can add: `globalSetup` and `globalTeardown`. These don't run per-worker—they run with the main Jest process that manages all the workers. 
+<details >
+<summary> <h4>Approach 2: Global Teardown </h4></summary>
+
+This method isn't particularly efficent or clean, but I wanted to include it to introduce two other configuration options you can add: `globalSetup` and `globalTeardown`. These define code that doesn't run per-file—it runs in the main Jest process, before the workers are created.
+
+In this case, we can't use the `globalSetup` option to create our database, since any environment variables or mocks we set here won't be passed on to the workers. Our tests wouldn't be able to use the new database name we set in `config`, and they'd default back to using the `pizza` database. While `globalSetup` is indeed used for slow processes like starting databases, creating test data, or spinning up Docker containers (the kinds of things you only want to do once), the JWT Pizza Service architecture doesn't allow us to extricate these steps from the app (if this weren't a school project or I had spare time, I'd definitely want to put in the work to refactor). Plus, since `globalSetup` runs before the workers, we'd only create one database anyway.
+
+We _will_ use `globalTeardown`, which defines what happens after all the workers have finished. All we need is a way to loop through the databases we created, and call delete on each of them.
+
+Unfortunately, Jest doesn't have a good way for workers to persist information after they finish, and there's also currently no way to see how many workers you created. We'll work around this issue by having the workers write their database names to a file. To avoid race conditions, we'll need each worker to create its own file of names. We'll do this by adding the following to our `setupFiles` function:
+
+```js
+const fs = require("fs");
+const path = require("path");
+const infoPath = path.join(__dirname, `test-db-info-${worker}.txt`);
+fs.appendFileSync(infoPath, dbName + "\n", "utf8");
+```
+
+This will result in one file for each worker, with each line in the file representing the database name. We can then parse this in our `globalTeardown` file, which we'll create now. I named mine `jest.teardown.js`:
+
+```js
+const fs = require("fs");
+const path = require("path");
+const mysql = require("mysql2/promise");
+const config = require("./src/config.js");
+
+module.exports = async () => {
+  const files = fs
+    .readdirSync(__dirname)
+    .filter((f) => f.startsWith("test-db-info-") && f.endsWith(".txt"));
+
+  const { host, user, password } = config.db.connection;
+  const connection = await mysql.createConnection({ host, user, password });
+
+  for (const file of files) {
+    const lines = fs
+      .readFileSync(path.join(__dirname, file), "utf8")
+      .split("\n")
+      .filter(Boolean);
+
+    for (const dbName of lines) {
+      await connection.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
+      console.log(`Dropped test database: ${dbName}`);
+    }
+
+    fs.unlinkSync(path.join(__dirname, file));
+  }
+
+  await connection.end();
+};
+```
+
+There's a lot in this file, so I'll break the important parts down:
+
+`module.exports = async () => {}`: 
+
+- `globalTeardown` files aren't allowed to contain asynchronous calls themselves, but they can still execute asynchronous functions by putting them in `module.exports`. In this case, we need asynchronous calls to drop each database.
+
+ `const files = fs ...`: 
+- Here, we create an array of files that match the filename pattern we had the worker files follow.
+
+`const { host, user, password } = config.db.connection`: 
+- Pretty self explanatory, but do note that we're importing the default `config` file here. Since we're getting the database name from the worker files, this isn't an issue.
+
+`const lines = fs ...`: 
+- Here, we parse each line, adding it to an array of database names
+
+`for (const dbName of lines){}`: 
+- This loop calls the database and tells it to delete a database with the name we're on.
+
+` fs.unlinkSync(path.join(__dirname, file));`: 
+- This deletes the worker file once we're done, so that we don't end up trying to delete extra databases in all future test runs.
+
+</details>
 
 ## Summary
 
-There isn't really a pressing reason to actually do this for class. We're going to be deploying our backend remotely, at which point we won't need to worry about infecting our real database with our test data. However, for other projects, it will be very useful to understand your testing framework and how it works, especially as you write more and more advanced tests. 
+There isn't really a pressing reason to actually do this for class. We're going to be deploying our backend remotely, at which point we won't need to worry about infecting our real database with our test data. However, for other projects, it will be very useful to understand your testing framework and how it works, especially as you write more and more advanced tests.
 
-### Jest, Behind The Scenes
+### Jest Execution Sequence
 
-1. Global Setup
-    - When you start your Jest tests, you launch the main process. This process:
-        - Examines your `jest.config` file to determine the settings to run your test with, as well as where to find them 
-        - Runs any `globalSetup` files
-        - Looks at your tests to 
-2.  
+1. Global Setup Phase
+   - Examine `jest.config` file to determine configuration
+   - Create test file queue
+   - Run any `globalSetup` files
+   - Spin up workers (limited by the number of cores)
+2. File Execution (concurrently across workers)
+   - Get file from test queue
+   - Run `setupFiles`
+   - Set up test environment (e.g. node)
+   - Initialize Jest Framework
+   - Run `setupFilesAfterEnv`
+   - Collect tests (run describe blocks)
+   - `beforeAll()`
+   - For each test (synchronous within each file):
+     - `beforeEach()`
+     - run test
+     - Report test results
+     - `afterEach()`
+   - `afterAll()`
+   - Clear imported modules
+   - Pull next file from test queue (if one exists) and repeat
+3. Global Teardown Phase
+   - Wait for workers to finish
+   - Run any `globalTeardown` files
+   - Print test result summary
 
 ## Sources
 
