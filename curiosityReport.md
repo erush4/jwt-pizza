@@ -8,6 +8,9 @@ JWT Pizza Service doesn't have its own router class.
 
 Instead, it uses express.Router(), and creates independent functions for each route. As a consequence, I can't do dependency injection without restructuring most of the code that deals with these routers. That wouldn't be a _huge_ task, but I didn't want to risk breaking code that I knew worked before I had a way to test whether that code worked (shoutout test-driven development—if those South Provo devs had used it, I wouldn't be in this mess). Instead, I wanted to figure out a way to have a variable database name, so that I could use one (or more) database(s) for testing and one database for production.
 
+> [!NOTE]
+> My research revolved around how I could perform certain tasks, so my report does the same. The [Summary](#summary) section contains a more straightforward explanation of the concepts I cover.
+
 ## Single Test Database
 
 The JWT Pizza Service database pulls its name from the `config.js` file. The most obvious way to change the name is to use a Jest mock. Since config doesn't have any functions, we can't use a function mock for this. We could use a module mock, but if we separate our tests across multiple files (something I wanted to do, so that my `service.test.js` file wasn't 1200 lines long), we'd have to redeclare our mock in every file, or separate it out to its own file, create a function that makes the mock, and then import and run the function at the head of each file. Not a lot of toil, but as it happens, there's a secret third type of Jest mock designed for this situation.
@@ -427,11 +430,21 @@ Dropped test database: test_db_4_1772148996141
 </details>
 
 > [!TIP]
-> If, like me, you have more cores than test files, you can use the `maxWorkers` configuration option to test parsing multiple lines per file. I've linked the information in my Sources section.
+> If, like me, you have more cores than test files, you can use the `maxWorkers` configuration option to test parsing multiple lines per file. I've linked the information in my [Sources](#sources) section.
 
 ## Summary
 
-There isn't really a pressing reason to actually do this for class. We're going to be deploying our backend remotely, at which point we won't need to worry about infecting our real database with our test data. However, for other projects, it will be very useful to understand your testing framework and how it works, especially as you write more and more advanced tests.
+### Manual Mocks
+
+- A third type of mock, used to replace an entire file, system, or module
+- Created in a `__mocks__` folder
+
+### Mock Hoisting
+- Feature of Jest where mocks are lifted to run before other imports
+- Enabled by Babel module
+- Not foolproof, and can miss mocks if they don't follow the standard pattern
+
+
 
 ### Jest Execution Sequence
 
