@@ -411,10 +411,10 @@ Dropped test database: test_db_3_1772148996140
 Dropped test database: test_db_4_1772148996141
 ```
 
+</details>
+
 > [!TIP]
 > If, like me, you have more cores than test files, you can set the `maxWorkers`configuration option, which I'll link to in my Sources section, in order to test parsing multiple lines per file.
-
-</details>
 
 ## Summary
 
