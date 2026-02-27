@@ -29,12 +29,8 @@ To make a manual mock, you first need to create a `__mocks__` folder next to the
     /tests
 ```
 
-
-> [!NOTE] 
+> [!NOTE]
 > If you're mocking something from `node_modules`, you'll need to put it in the root folder, and then name the file after the module you're mocking.
-
-
-
 
 Since we only want to change one thing from `config`, we can use another useful function: `requireActual()`.
 
@@ -52,8 +48,9 @@ module.exports = {
   },
 };
 ```
+
 > [!WARNING]
-> If you don't use `requireActual()`, Jest will try to replace `config` with your mock and create a loop that can't be resolved.**
+> If you don't use `requireActual()`, Jest will try to replace `config` with your mock and create a loop that can't be resolved.
 
 Now, in each of our test files, we update our imports, from this:
 
@@ -62,6 +59,9 @@ const request = require("supertest");
 const app = require("./service");
 const config = require("./config.js");
 ```
+
+> [!NOTE]
+> You might not have config in your test files. You will still need to add the mock, so that the database uses the new value.
 
 to this:
 
@@ -72,10 +72,7 @@ const config = jest.mock("./config.js");
 ```
 
 > [!CAUTION]
-> `Be sure to use the appropriate path.`
-
->[!NOTE]
-> You might not have config in your test files. You will still need to add the mock, so that the database uses the new value.
+> Be sure to use the appropriate path.
 
 We adjust our `database.initializeDatabase()` function so that it prints out the database it uses, just so we can see if it's using the right database.
 
@@ -122,18 +119,7 @@ module.exports = { Role, DB: db };
 
 Since the database is created before the mock takes effect, it never has the chance to see the updated name from our `config` file. There are two possible fixes to this problem:
 
-#### 1. Import first, then assign to `config`
-
-```javascript
-const request = require("supertest");
-const app = require("./service");
-jest.mock("./config.js");
-const config = require("./config.js");
-```
-
-This will ensure that Babel hoists the mock statement up, so that it is already in place _before_ the `./service` import.
-
-#### 2. Just move it up
+#### 1. Just move it up
 
 ```javascript
 const request = require("supertest");
@@ -142,6 +128,17 @@ const app = require("./service");
 ```
 
 This one's pretty self-explanatory. If the mock is already in place before the database initializes, there's no problem.
+
+#### 2. Separate the mock from assigning to `config`
+
+```javascript
+const request = require("supertest");
+const app = require("./service");
+jest.mock("./config.js");
+const config = require("./config.js");
+```
+
+This will ensure that Babel hoists the mock statement up, so that it is already in place _before_ the `./service` import. I don't recommend this one, but it does work.
 
 Once either fix is in place, everything ought to works just fine.
 
@@ -197,10 +194,11 @@ Now, we can create the actual `jest.env.js` file.
 ```javascript
 const worker = process.env.JEST_WORKER_ID || "0";
 const dbName = `test_db_${worker}_${Date.now()}`;
-//Since a single worker might run multiple files, we also add a date to distinguish sequential files
-
 process.env.TEST_DB_NAME = dbName;
 ```
+
+> [!NOTE]
+> Since a single worker might run multiple files, we also add a date to distinguish databases from files run by the same worker.
 
 This takes advantage of environment variables (global variables specific to one process—CS 324 teaches you about these). Since each worker is a new process, they will have their own set of environment variables, even though they're running the same code.
 
@@ -248,7 +246,7 @@ Each worker will now have its own database, preventing the double-access errors 
 There are a number of ways to do this, but I'll highlight two.
 
 <details open>
-<summary><h4>Approach 1: Add an `afterAll()`</h4> </summary>
+<summary><h4>Approach 1: Add an <code>afterAll()</code></h4> </summary>
 
 You might think this is strange, considering that we haven't defined any tests in our setup file. However, we don't need to—Jest handles `afterAll()` in the scope it's called in. If you've ever used a `describe()` block (like you do in CS 340), you might have added an `afterAll()` call that would run only for the tests in that block. There's something similar happening here: our `afterAll()` may not be defined in the test file, but it will run once the test file finishes.
 
@@ -310,7 +308,7 @@ And we can be confident that each test will have its own, fresh database.
 
 </details>
 
-<details >
+<details open>
 <summary> <h4>Approach 2: Global Teardown </h4></summary>
 
 This method isn't particularly efficient or clean, but I wanted to include it to introduce two other configuration options you can add: `globalSetup` and `globalTeardown`. These define code that doesn't run per-file—it runs in the main Jest process, before the workers are created.
@@ -414,7 +412,7 @@ Dropped test database: test_db_4_1772148996141
 ```
 
 > [!TIP]
->If, like me, you have more cores than test files, you can set the `maxWorkers`configuration option, which I'll link to in my Sources section, in order to test parsing multiple lines per file.
+> If, like me, you have more cores than test files, you can set the `maxWorkers`configuration option, which I'll link to in my Sources section, in order to test parsing multiple lines per file.
 
 </details>
 
@@ -452,15 +450,15 @@ There isn't really a pressing reason to actually do this for class. We're going 
 
 ## Sources
 
-| Concept              | Website                                                        |
-| -------------------- | -------------------------------------------------------------- |
-| Manual Mocks         | https://jestjs.io/docs/manual-mocks                            |
-| `requireActual()`    | https://jestjs.io/docs/jest-object#jestrequireactualmodulename |
-| Hoisting             | https://jestjs.io/docs/jest-object#mock-modules                |
-| `afterAll()`         | https://jestjs.io/docs/api#afterallfn-timeout                  |
-| `globalSetup`        | https://jestjs.io/docs/configuration#globalsetup-string        |
-| `JEST_WORKER_ID`     | https://jestjs.io/docs/environment-variables#jest_worker_id    |
-| `setupFiles`         | https://jestjs.io/docs/configuration#setupfiles-array          |
-| `setupFilesAfterEnv` | https://jestjs.io/docs/configuration#setupfilesafterenv-array  |
-| `globalTeardown`     | https://jestjs.io/docs/configuration#globalteardown-string     |
-| `maxWorkers`         | https://jestjs.io/docs/configuration#maxworkers-number--string |
+| Concept              | Website                                                          |
+| -------------------- | ---------------------------------------------------------------- |
+| Manual Mocks         | https://jestjs.io/docs/manual-mocks                              |
+| `requireActual()`    | https://jestjs.io/docs/jest-object#jestrequireactualmodulename   |
+| Hoisting             | https://jestjs.io/docs/manual-mocks#using-with-es-module-imports |
+| `afterAll()`         | https://jestjs.io/docs/api#afterallfn-timeout                    |
+| `globalSetup`        | https://jestjs.io/docs/configuration#globalsetup-string          |
+| `JEST_WORKER_ID`     | https://jestjs.io/docs/environment-variables#jest_worker_id      |
+| `setupFiles`         | https://jestjs.io/docs/configuration#setupfiles-array            |
+| `setupFilesAfterEnv` | https://jestjs.io/docs/configuration#setupfilesafterenv-array    |
+| `globalTeardown`     | https://jestjs.io/docs/configuration#globalteardown-string       |
+| `maxWorkers`         | https://jestjs.io/docs/configuration#maxworkers-number--string   |
