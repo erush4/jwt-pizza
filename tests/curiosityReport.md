@@ -27,10 +27,12 @@ To make a manual mock, you first need to create a `__mocks__` folder next to the
         /__mocks__
             config.js
     /tests
+```
+
 
 > [!NOTE] 
-> If you're mocking something from `node_modules,` you'll need to put it in the root folder, and then name the file after the module you're mocking.`
-```
+> If you're mocking something from `node_modules,` you'll need to put it in the root folder, and then name the file after the module you're mocking.
+
 
 
 
