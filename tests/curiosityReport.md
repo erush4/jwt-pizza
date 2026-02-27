@@ -6,7 +6,7 @@ I really, _really_ hate having test data in my primary database. After just a fe
 
 JWT Pizza Service doesn't have its own router class.
 
-Instead, it uses express.Router(), and creates a independent functions for each route. As a consequence, I can't do dependency injection without restructuring most of the code that deals with these routers. That wouldn't be a _huge_ task, but I didn't want to risk breaking code that I knew worked before I had a way to test whether that code worked (shoutout test-driven development—if those South Provo devs had used it, I wouldn't be in this mess). Instead, I wanted to figure out a way to have a variable database name, so that I could use one (or more) database(s) for testing and one database for production.
+Instead, it uses express.Router(), and creates independent functions for each route. As a consequence, I can't do dependency injection without restructuring most of the code that deals with these routers. That wouldn't be a _huge_ task, but I didn't want to risk breaking code that I knew worked before I had a way to test whether that code worked (shoutout test-driven development—if those South Provo devs had used it, I wouldn't be in this mess). Instead, I wanted to figure out a way to have a variable database name, so that I could use one (or more) database(s) for testing and one database for production.
 
 ## Single Test Database
 
@@ -110,7 +110,7 @@ const config = jest.mock("./config.js");
 
 Jest uses a plugin (Babel, specifically) to look for mocks in the top-level scope. It then "hoists" these mocks up so that they run before other imports. However, this only works when using `jest.mock("...")` on its own line. In my case, I'm also assigning the value of our mock: `const config = jest.mock("...")`, so Babel doesn't see the line.
 
-When we import `service`, we also get all of it's imports—and in this case, that includes our database. When the database is loaded, it also runs all of _that_ code, which includes the lazy loader:
+When we import `service`, we also get all of its imports—and in this case, that includes our database. When the database is loaded, it also runs all of _that_ code, which includes the lazy loader:
 
 ```javascript
 const db = new DB();
@@ -127,7 +127,7 @@ const config = jest.mock("./config.js");
 const app = require("./service");
 ```
 
-This one's pretty self-explanatory. If the mock is already in place before the database initializes, there's no problem.
+This one's pretty self-explanatory. If the mock is before the database initializes in the `service` import, it won't need hoisting in the first place.
 
 #### 2. Separate the mock from assigning to `config`
 
@@ -140,7 +140,7 @@ const config = require("./config.js");
 
 This will ensure that Babel hoists the mock statement up, so that it is already in place _before_ the `./service` import. I don't recommend this one, but it does work.
 
-Once either fix is in place, everything ought to works just fine.
+Once either fix is in place, everything ought to work just fine.
 
 ```shell
 $ npm run test
@@ -148,10 +148,20 @@ $ npm run test
 > jwt-pizza-service@1.0.0 test
 > jest
 
-  console.log
-    Database pizza exists
+console.log
+      Checking if database test exists...
 
-      at DB.log [as initializeDatabase] (src/database/database.js:445:17)
+      at DB.log [as checkDatabaseExists] (src/database/database.js:539:13)
+
+    console.log
+      Database does not exist, creating test at 127.0.0.1
+
+      at DB.log [as initializeDatabase] (src/database/database.js:482:17)
+
+    console.log
+      Successfully created database
+
+      at DB.log [as initializeDatabase] (src/database/database.js:495:19)
 
  PASS  src/service.test.js
   √ login (129 ms)
@@ -163,6 +173,9 @@ $ npm run test
 ## Multiple Databases
 
 Creating a single database is probably the way to go, but it's possible you'd want something different. Depending on how you write your tests, you might encounter issues caused from pre-existing test data or modifiers. For instance, if your `deleteFranchise` and `createFranchise` tests run simultaneously, your tests get a little flaky, since the number of franchises might remain the same depending on how the tests run. To tackle this issue, we need to look into the mechanics of how Jest runs tests concurrently.
+
+> [!NOTE]
+> For this section to work, it's important that you get rid of any mocking of `config.js` that you did in the previous section.
 
 ### Workers
 
@@ -203,7 +216,7 @@ process.env.TEST_DB_NAME = dbName;
 This takes advantage of environment variables (global variables specific to one process—CS 324 teaches you about these). Since each worker is a new process, they will have their own set of environment variables, even though they're running the same code.
 
 - `process.env.JEST_WORKER_ID`
-  - This is an environment variable that contains the ID of the current worker, created by Jest. This ID is also the number of workers that exist so far (starting at 1).
+  - This is an environment variable that contains the ID of the current worker, created by Jest. These ID's are created sequentially (starting at 1 for the first worker, then 2 for the second, and so on).
 
 - `process.env.TEST_DB_NAME = dbName;`
   - This creates a new environment variable, `TEST_DB_NAME` and gives it the value stored in `dbName`.
@@ -414,7 +427,7 @@ Dropped test database: test_db_4_1772148996141
 </details>
 
 > [!TIP]
-> If, like me, you have more cores than test files, you can set the `maxWorkers`configuration option, which I'll link to in my Sources section, in order to test parsing multiple lines per file.
+> If, like me, you have more cores than test files, you can use the `maxWorkers` configuration option to test parsing multiple lines per file. I've linked the information in my Sources section.
 
 ## Summary
 
