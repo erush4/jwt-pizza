@@ -31,7 +31,7 @@ To make a manual mock, you first need to create a `__mocks__` folder next to the
 
 
 > [!NOTE] 
-> If you're mocking something from `node_modules,` you'll need to put it in the root folder, and then name the file after the module you're mocking.
+> If you're mocking something from `node_modules`, you'll need to put it in the root folder, and then name the file after the module you're mocking.
 
 
 
@@ -52,8 +52,8 @@ module.exports = {
   },
 };
 ```
-
-**If you don't use `requireActual()`, Jest will try to replace `config` with your mock and create a loop that can't be resolved.**
+> [!WARNING]
+> If you don't use `requireActual()`, Jest will try to replace `config` with your mock and create a loop that can't be resolved.**
 
 Now, in each of our test files, we update our imports, from this:
 
@@ -63,8 +63,6 @@ const app = require("./service");
 const config = require("./config.js");
 ```
 
-> :bulb:`You might not have config in your test files. You will still need to add the mock, so that the database uses the new value.`
-
 to this:
 
 ```javascript
@@ -73,7 +71,11 @@ const app = require("./service");
 const config = jest.mock("./config.js");
 ```
 
-> :warning: `Be sure to use the appropriate path.`
+> [!CAUTION]
+> `Be sure to use the appropriate path.`
+
+>[!NOTE]
+> You might not have config in your test files. You will still need to add the mock, so that the database uses the new value.
 
 We adjust our `database.initializeDatabase()` function so that it prints out the database it uses, just so we can see if it's using the right database.
 
@@ -411,7 +413,8 @@ Dropped test database: test_db_3_1772148996140
 Dropped test database: test_db_4_1772148996141
 ```
 
-> :bulb: `If, like me, you have more cores than test files, you can set the `maxWorkers`configuration option, which I'll link to in my Sources section, in order to test parsing multiple lines per file.`
+> [!TIP]
+>If, like me, you have more cores than test files, you can set the `maxWorkers`configuration option, which I'll link to in my Sources section, in order to test parsing multiple lines per file.
 
 </details>
 
