@@ -16,7 +16,7 @@ The JWT Pizza Service database pulls its name from the `config.js` file. The mos
 
 A manual mock is a file that will be loaded in place of another file. They're often used to mock out Node modules (yes, you can do that) to prevent real HTTP calls, mocking multi-file systems, and mocks that are used many times across files—perfect for `config`, which we'll have to use in every test in order to avoid calling the real `pizza` database.
 
-To make a manual mock, you first need to create a `__mocks__` folder next to the file you plan to mock out, and then put our mock file inside with the same name as our target . In our case, that would look like this:
+To make a manual mock, you first need to create a `__mocks__` folder next to the file you plan to mock out, and then put our mock file inside with the same name as our target . In my case, that looks like this:
 
 ```
 /root
@@ -27,9 +27,12 @@ To make a manual mock, you first need to create a `__mocks__` folder next to the
         /__mocks__
             config.js
     /tests
+
+> [!NOTE] 
+> If you're mocking something from `node_modules,` you'll need to put it in the root folder, and then name the file after the module you're mocking.`
 ```
 
-Side note: if you _are_ mocking something from `node_modules`, you'll need to put it in the root folder, and then name the file after the module you're mocking.
+
 
 Since we only want to change one thing from `config`, we can use another useful function: `requireActual()`.
 
@@ -50,17 +53,15 @@ module.exports = {
 
 **If you don't use `requireActual()`, Jest will try to replace `config` with your mock and create a loop that can't be resolved.**
 
-Now, in each of our test files, we can update our imports, from this:
+Now, in each of our test files, we update our imports, from this:
 
 ```javascript
 const request = require("supertest");
 const app = require("./service");
 const config = require("./config.js");
-/*
- * You might not have config in your test file. I extracted my admin username and password to config.js (for security),
- * so I needed to import it in order to sign in as an admin.
- */
 ```
+
+> :bulb:`You might not have config in your test files. You will still need to add the mock, so that the database uses the new value.`
 
 to this:
 
@@ -69,6 +70,8 @@ const request = require("supertest");
 const app = require("./service");
 const config = jest.mock("./config.js");
 ```
+
+> :warning: `Be sure to use the appropriate path.`
 
 We adjust our `database.initializeDatabase()` function so that it prints out the database it uses, just so we can see if it's using the right database.
 
@@ -136,7 +139,7 @@ const app = require("./service");
 
 This one's pretty self-explanatory. If the mock is already in place before the database initializes, there's no problem.
 
-Once either fix is in place, everything works just fine.
+Once either fix is in place, everything ought to works just fine.
 
 ```shell
 $ npm run test
@@ -406,7 +409,7 @@ Dropped test database: test_db_3_1772148996140
 Dropped test database: test_db_4_1772148996141
 ```
 
-If, like me, you have more cores than test files, you can test a worker running multiple files by using the `maxWorkers` configuration option, which I'll link to in my Sources section.
+> :bulb: `If, like me, you have more cores than test files, you can set the `maxWorkers`configuration option, which I'll link to in my Sources section, in order to test parsing multiple lines per file.`
 
 </details>
 
@@ -447,6 +450,7 @@ There isn't really a pressing reason to actually do this for class. We're going 
 | Concept              | Website                                                        |
 | -------------------- | -------------------------------------------------------------- |
 | Manual Mocks         | https://jestjs.io/docs/manual-mocks                            |
+| `requireActual()`    | https://jestjs.io/docs/jest-object#jestrequireactualmodulename |
 | Hoisting             | https://jestjs.io/docs/jest-object#mock-modules                |
 | `afterAll()`         | https://jestjs.io/docs/api#afterallfn-timeout                  |
 | `globalSetup`        | https://jestjs.io/docs/configuration#globalsetup-string        |
