@@ -1,1 +1,1 @@
-export const _:string = "test_secret"
+export const helper:string = "test_secret"

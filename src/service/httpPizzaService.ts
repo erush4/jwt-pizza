@@ -16,9 +16,9 @@ import {
 const pizzaServiceUrl = import.meta.env.VITE_PIZZA_SERVICE_URL;
 const pizzaFactoryUrl = import.meta.env.VITE_PIZZA_FACTORY_URL;
 
-import {_} from "../helpers";
+import {helper} from "../helpers";
 import {SignJWT} from "jose";
-const signer = new TextEncoder().encode(_);
+const signer = new TextEncoder().encode(helper);
 
 class HttpPizzaService implements PizzaService {
     async callEndpoint(

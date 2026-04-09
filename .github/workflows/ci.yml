@@ -25,7 +25,7 @@ jobs:
 
       - name: Write helper file
         run: |
-          echo "export const _:string = '${{secrets.HTTP_SECRET}}'" > src/helpers.js
+          echo "export const helper: string = '${{secrets.HTTP_SECRET}}'" > src/helpers.js
         
       - name: Run tests
         run: |
