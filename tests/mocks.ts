@@ -64,7 +64,7 @@ async function authMock(page: Page) {
     switch (method) {
       //login
       case "PUT":
-        const loginReq = route.request().postDataJSON();
+        const loginReq = route.request().postDataJSON().body;
         const user = Object.values(validUsers).find(
           (u) => u.email === loginReq.email,
         );
@@ -89,7 +89,7 @@ async function authMock(page: Page) {
 
       //register (will only work with new user)
       case "POST":
-        const registerReq = route.request().postDataJSON();
+        const registerReq = route.request().postDataJSON().body;
         if (!registerReq.email || !registerReq.name || !registerReq.password) {
           await route.fulfill({
             status: 400,
@@ -185,7 +185,7 @@ async function franchisesMock(page: Page) {
         break;
       case "POST":
         hasAuthToken(route);
-        const newFranchise: Franchise = route.request().postDataJSON();
+        const newFranchise: Franchise = route.request().postDataJSON().body;
         const adminEmails = newFranchise.admins!.map((admin) => admin.email);
         const newAdmins = adminEmails.flatMap((email) => {
           const user = Object.values(validUsers).find((u) => u.email === email);
@@ -243,7 +243,7 @@ async function orderMock(page: Page) {
     const method = route.request().method();
     switch (method) {
       case "POST":
-        const orderReq = route.request().postDataJSON();
+        const orderReq = route.request().postDataJSON().body;
         const orderRes = {
           order: { ...orderReq, id: 23 },
           jwt: mockedJwt,
@@ -293,7 +293,7 @@ async function orderMock(page: Page) {
 async function jwtMock(page: Page) {
   await page.route(pizzaFactoryUrl + "/api/order/verify", async (route) => {
     expect(route.request().method()).toBe("POST");
-    const jwtReq = route.request().postDataJSON();
+    const jwtReq = route.request().postDataJSON().body;
     if (jwtReq.jwt != mockedJwt) {
       await route.fulfill({
         status: 401,
@@ -405,7 +405,7 @@ async function updateUserMock(page: Page) {
     switch (method) {
       case "PUT":
         const user = Object.values(validUsers).find((u) => u.id === userid);
-        const updates = route.request().postDataJSON();
+        const updates = route.request().postDataJSON().body;
         user!.email = updates.email;
         if (updates.password) {
           user!.password = updates.password;

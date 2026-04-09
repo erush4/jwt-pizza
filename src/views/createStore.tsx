@@ -11,6 +11,7 @@ import { Store } from '../service/pizzaService';
 export default function CreateStore() {
   const state = useLocation().state;
   const navigateToParentPath = useBreadcrumb();
+  // @ts-ignore
   const [store, setStore] = React.useState<Store>({ id: '', name: '' });
 
   async function createStore(event: React.FormEvent) {
