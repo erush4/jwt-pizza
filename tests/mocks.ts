@@ -293,7 +293,7 @@ async function orderMock(page: Page) {
 async function jwtMock(page: Page) {
   await page.route(pizzaFactoryUrl + "/api/order/verify", async (route) => {
     expect(route.request().method()).toBe("POST");
-    const jwtReq = route.request().postDataJSON().body;
+    const jwtReq = route.request().postDataJSON();
     if (jwtReq.jwt != mockedJwt) {
       await route.fulfill({
         status: 401,
