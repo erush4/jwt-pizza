@@ -18,6 +18,7 @@ const pizzaFactoryUrl = import.meta.env.VITE_PIZZA_FACTORY_URL;
 
 import {helper} from "../helpers";
 import {SignJWT} from "jose";
+
 const signer = new TextEncoder().encode(helper);
 
 class HttpPizzaService implements PizzaService {
@@ -42,11 +43,13 @@ class HttpPizzaService implements PizzaService {
                 }
 
                 if (body) {
-                    const signature = await new SignJWT(body).setProtectedHeader({alg: 'HS256'}).setExpirationTime(('3s')).sign(signer);
+                    if (path != "https://pizza-factory.cs329.click/api/order/verify") {
+                        const signature = await new SignJWT(body).setProtectedHeader({alg: 'HS256'}).setExpirationTime(('3s')).sign(signer);
 
-                    body = {
-                        body: body,
-                        signature: signature,
+                        body = {
+                            body: body,
+                            signature: signature,
+                        }
                     }
                     options.body = JSON.stringify(body);
                 }
